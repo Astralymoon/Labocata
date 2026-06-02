@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Labocata — Brunch en Coatzacoalcos, Veracruz</title>
+
+    <!-- SEO -->
+    <meta name="description" content="Labocata, el brunch de autor en Coatzacoalcos, Veracruz. Ingredientes locales, café de especialidad y menú estacional. Lun–Vie 8–16h · Sáb–Dom 8–17h." />
+    <meta name="keywords" content="brunch Coatzacoalcos, café brunch Veracruz, desayunos Coatzacoalcos, restaurante brunch Coatza, Labocata" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://labocata.mx/menu" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Labocata — Brunch de autor en Coatzacoalcos" />
+    <meta property="og:description" content="Ingredientes honestos, ambiente cálido y brunch de autor frente al calor del puerto. Coatzacoalcos, Ver." />
+    <meta property="og:image" content="https://images.unsplash.com/photo-1550583724-b2692b85b150?w=1200&q=80" />
+    <meta property="og:url" content="https://labocata.mx/menu" />
+    <meta property="og:type" content="restaurant.menu" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Syne:wght@400;500;600;700;800&family=DM+Serif+Display:ital@0;1&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="CSS.css" />
+  </head>
+  <body>
+    <!-- NAV -->
+    <nav id="nav">
+      <a href="../index.html" class="nav-logo">Labocata.</a>
+      <ul class="nav-links">
+        <li><a href="Nosotros.html">Nosotros</a></li>
+        <li><a href="MenuV3.html" class="active">Menú</a></li>
+        <li><a href="Localesreservas.html">Sucursales</a></li>
+        <li><a href="#lastOrderSection">Ultimo pedido</a></li>
+      </ul>
+      <div class="nav-right">
+        <a href="Localesreservas.html#reservaciones" class="nav-cta">Reservar</a>
+        <button class="nav-cart-btn" id="openOrder" onclick="toggleOrder(true)" aria-label="Ver mi orden">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <path d="M16 10a4 4 0 01-8 0" />
+          </svg>
+          <span class="cart-label">Mi orden</span>
+          <span class="cart-count-badge" id="cartBadge">0</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- ORDER OVERLAY -->
+    <div class="order-overlay" id="orderOverlay" onclick="toggleOrder(false)"></div>
+
+    <!-- ORDER PANEL -->
+    <div class="order-panel" id="orderPanel" role="dialog" aria-label="Panel de orden">
+      <div class="order-header">
+        <div class="order-title">
+          <span>Tu pedido</span>
+          Mi orden
+          <small id="orderMeta">Sin platillos agregados</small>
+        </div>
+        <button class="order-close" onclick="toggleOrder(false)" aria-label="Cerrar panel">
+          <svg viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+      <div id="orderContent" style="display: flex; flex-direction: column; flex: 1; overflow: hidden">
+        <div class="order-meter" id="orderMeter" aria-live="polite">
+          <span id="orderMeterCount">0 items</span>
+          <strong id="orderMeterTotal">$0</strong>
+        </div>
+        <div class="order-items" id="orderItems">
+          <div class="order-empty" id="orderEmpty">
+            <div class="order-empty-icon">
+              <svg viewBox="0 0 24 24">
+                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <path d="M16 10a4 4 0 01-8 0" />
+              </svg>
+            </div>
+            <p>Tu orden está vacía</p>
+            <small>Agrega platillos del menú usando el botón <strong>+</strong> en cada item.</small>
+          </div>
+        </div>
+        <div class="order-footer" id="orderFooter" style="display: none">
+          <div class="order-subtotals" id="orderSubtotals"></div>
+          <div class="order-type">
+            <button class="order-type-btn active" id="btnPickup" onclick="setOrderType('pickup')">
+              <svg viewBox="0 0 24 24">
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+              <span class="order-type-label">Recoger en restaurante</span>
+            </button>
+            <button class="order-type-btn" id="btnDelivery" onclick="setOrderType('delivery')">
+              <svg viewBox="0 0 24 24">
+                <rect x="1" y="3" width="15" height="13" />
+                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+                <circle cx="5.5" cy="18.5" r="2.5" />
+                <circle cx="18.5" cy="18.5" r="2.5" />
+              </svg>
+              <span class="order-type-label">Envío a domicilio</span>
+            </button>
+          </div>
+          <div class="pickup-info show" id="pickupInfo">
+            <div class="pickup-icon">
+              <svg viewBox="0 0 24 24">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+            </div>
+            <div class="pickup-text">
+              <p>Punto de recogida</p>
+              <small>Labocata — Coatzacoalcos, Ver.<br />Listo en aprox. 20–30 min</small>
+            </div>
+          </div>
+          <div class="delivery-fields" id="deliveryFields">
+            <div class="delivery-time-note">Entrega estimada 40–55 min</div>
+            <input class="order-input" id="deliveryName" placeholder="Tu nombre completo" type="text" />
+            <input class="order-input" id="deliveryPhone" placeholder="Teléfono de contacto" type="tel" />
+            <input class="order-input" id="deliveryAddress" placeholder="Calle y número" type="text" />
+            <div class="order-input-row">
+              <input class="order-input" placeholder="Colonia" type="text" />
+              <input class="order-input" placeholder="Código postal" type="text" />
+            </div>
+            <input class="order-input" placeholder="Referencias (color de puerta, detalles...)" type="text" />
+          </div>
+          <label class="order-notes-label" for="orderNotes">Notas para la cocina</label>
+          <textarea class="order-notes" id="orderNotes" placeholder="Alergias, preferencias, sin cebolla…"></textarea>
+          <div class="order-suggestion" id="orderSuggestion" hidden></div>
+          <!-- MEJORA: botón confirma y abre WhatsApp -->
+          <button class="btn-order" id="confirmBtn" onclick="confirmOrder()">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="white" stroke-width="2">
+              <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>
+            </svg>
+            Confirmar por WhatsApp
+          </button>
+        </div>
+      </div>
+      <div class="order-success" id="orderSuccess">
+        <div class="order-success-icon">
+          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+        </div>
+        <h3>¡Orden enviada!</h3>
+        <p>Tu pedido se abrió en WhatsApp. En breve tu mesero lo confirmará.</p>
+        <span class="order-num" id="orderNum"></span>
+        <button class="btn-gold" style="margin-top: 8px" onclick="resetOrder()">Nueva orden</button>
+      </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <button class="order-fab" id="orderFab" onclick="toggleOrder(true)" aria-label="Ver orden">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+        <line x1="3" y1="6" x2="21" y2="6" />
+        <path d="M16 10a4 4 0 01-8 0" />
+      </svg>
+      <span class="fab-badge" id="fabBadge">0</span>
+      <span>Ver orden</span>
+      <span class="fab-amount" id="fabAmount">$0</span>
+    </button>
+
+    <!-- HERO -->
+    <section class="menu-hero">
+      <div class="menu-hero-bg"></div>
+      <div class="menu-hero-content">
+        <!-- MEJORA: temporada actualizada -->
+        <span class="menu-hero-label">Labocata brunch de autor</span>
+        <h1 class="menu-hero-title">Brunch<br /><em>con calma.</em></h1>
+        <!-- MEJORA: subtítulo más conciso -->
+        <p class="menu-hero-sub">Huevos al momento, café bien hecho y recetas cálidas para empezar el día sin prisa.</p>
+        <!-- MEJORA: identidad local Coatzacoalcos -->
+        <span class="menu-hero-location">Coatzacoalcos, Ver. · Temporada Primavera / Verano</span>
+        <div class="hours-pill">
+          <div class="hours-dot"></div>
+          Lun – Vie 8:00 – 16:00 &nbsp;·&nbsp; Sáb &amp; Dom 8:00 – 17:00
+        </div>
+      </div>
+    </section>
+
+    <!-- TICKER -->
+    <div class="strip" aria-hidden="true">
+      <div class="strip-inner">
+        <span class="strip-item">Brunch de autor</span>
+        <span class="strip-item">Ingredientes locales</span>
+        <span class="strip-item">Café de especialidad</span>
+        <span class="strip-item">Menú estacional</span>
+        <span class="strip-item">Coatzacoalcos</span>
+        <span class="strip-item">Sin prisa</span>
+        <span class="strip-item">Brunch de autor</span>
+        <span class="strip-item">Ingredientes locales</span>
+        <span class="strip-item">Café de especialidad</span>
+        <span class="strip-item">Menú estacional</span>
+        <span class="strip-item">Coatzacoalcos</span>
+        <span class="strip-item">Sin prisa</span>
+      </div>
+    </div>
+
+    <!-- FILTER NAV -->
+    <div class="filter-section" role="navigation" aria-label="Filtrar menú">
+      <div class="filter-inner">
+        <button class="filter-btn active" data-filter="all">Todo el menú</button>
+        <div class="filter-divider"></div>
+        <button class="filter-btn" data-filter="clasicos">Clásicos</button>
+        <div class="filter-divider"></div>
+        <button class="filter-btn" data-filter="bocadillos">Bocadillos</button>
+        <div class="filter-divider"></div>
+        <button class="filter-btn" data-filter="dulce">Mesa Dulce</button>
+        <div class="filter-divider"></div>
+        <button class="filter-btn" data-filter="bebidas">Bebidas</button>
+        <div class="filter-divider"></div>
+        <button class="filter-btn" data-filter="vegano">Vegano</button>
+        <div class="filter-dietary">
+          <span class="dietary-tag"><span class="diet-dot v"></span>Vegetariano</span>
+          <span class="dietary-tag"><span class="diet-dot vg"></span>Vegano</span>
+          <span class="dietary-tag"><span class="diet-dot gf"></span>Sin gluten</span>
+          <span class="dietary-tag"><span class="diet-dot s"></span>Signature</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SPOTLIGHT -->
+    <section class="menu-spotlight" aria-label="Imperdible de hoy">
+      <div class="spotlight-copy">
+        <span class="spotlight-label" id="spotlightDayLabel">Imperdible de hoy</span>
+        <h2 id="spotlightTitle">Huevos Benedictinos + Café de Olla</h2>
+        <p id="spotlightDescription">La combinación de brunch que mejor cuenta Labocata: salado, cálido y listo para empezar lento.</p>
+        <div class="spotlight-mini-total">
+          <span>Combo sugerido</span>
+          <strong id="spotlightTotal">$244</strong>
+        </div>
+      </div>
+      <div class="spotlight-photos" aria-hidden="true">
+        <figure class="spotlight-photo main">
+          <img id="spotlightImageOne" src="https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=700&q=80" alt="" loading="lazy" />
+        </figure>
+        <figure class="spotlight-photo">
+          <img id="spotlightImageTwo" src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=500&q=80" alt="" loading="lazy" />
+        </figure>
+      </div>
+      <div class="spotlight-actions">
+        <a class="spotlight-btn primary" href="#chefPick">Ver platillo</a>
+        <button class="spotlight-btn secondary" type="button" onclick="addSpotlightOrder()">Armar mi orden</button>
+      </div>
+    </section>
+
+    <!-- MENU BODY -->
+    <main class="menu-body" id="menuBody">
+
+      <!-- ====== CLÁSICOS ====== -->
+      <div class="cat-header reveal" data-cat="clasicos">
+        <div>
+          <span class="cat-num">01 — Clásicos</span>
+          <h2 class="cat-title">Los que <em>nunca</em><br />fallan.</h2>
+        </div>
+        <p class="cat-desc">Los platillos que definen a Labocata. Recetas depuradas con el tiempo.</p>
+      </div>
+      <div class="menu-grid" data-cat="clasicos">
+
+        <!-- Featured: Huevos Benedictinos -->
+        <div class="menu-item featured" id="chefPick" data-cat="clasicos">
+          <div class="item-photo">
+            <img src="https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=800&q=80" alt="Huevos Benedictinos con hollandaise — Labocata" loading="lazy" />
+          </div>
+          <div class="item-body">
+            <span class="featured-badge">✦ &nbsp;La estrella de la casa</span>
+            <div class="item-header">
+              <h3 class="item-name">Huevos <em>Benedictinos</em></h3>
+              <span class="item-price">$189</span>
+            </div>
+            <!-- MEJORA: descripción más corta y escaneable -->
+            <p class="item-desc">Muffin artesanal, jamón serrano, huevos pochados y salsa hollandaise.</p>
+            <div class="item-footer">
+              <div class="item-tags">
+                <span class="item-tag s">Signature</span>
+                <span class="item-tag nuevo">Nuevo</span>
+              </div>
+              <div class="qty-ctrl" id="qty-0"></div>
+              <button class="add-btn" onclick="addToOrder(this, 'Huevos Benedictinos', 189, 'qty-0')">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Avocado Toast -->
+        <div class="menu-item has-photo" data-cat="clasicos">
+          <div class="item-photo">
+            <img src="https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=600&q=80" alt="Avocado Toast en pan masa madre" loading="lazy" />
+          </div>
+          <div class="item-body">
+            <div class="item-header">
+              <h3 class="item-name">Avocado <em>Toast</em></h3>
+              <span class="item-price">$149</span>
+            </div>
+            <p class="item-desc">Masa madre, aguacate hass, jitomate cherry asado y microgreens.</p>
+            <div class="item-footer">
+              <div class="item-tags">
+                <span class="item-tag vg">Vegano</span>
+                <span class="item-tag gf">Sin gluten</span>
+              </div>
+              <div class="qty-ctrl" id="qty-1"></div>
+              <button class="add-btn" onclick="addToOrder(this, 'Avocado Toast', 149, 'qty-1')">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chilaquiles Rojos -->
+        <div class="menu-item text-card" data-cat="clasicos">
+          <div class="item-header">
+            <h3 class="item-name">Chilaquiles <em>Rojos</em></h3>
+            <span class="item-price">$165</span>
+          </div>
+          <p class="item-desc">Totopos en salsa guajillo, queso Oaxaca, crema, cebolla morada. Con dos huevos.</p>
+          <div class="item-footer">
+            <div class="item-tags"><span class="item-tag v">Vegetariano</span></div>
+            <div class="qty-ctrl" id="qty-2"></div>
+            <button class="add-btn" onclick="addToOrder(this, 'Chilaquiles Rojos', 165, 'qty-2')">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              Agregar
+            </button>
+          </div>
+        </div>
+
+        <!-- Molletes -->
+        <div class="menu-item text-card" data-cat="clasicos">
+          <div class="item-header">
+            <h3 class="item-name">Molletes <em>de la Casa</em></h3>
+            <span class="item-price">$145</span>
+          </div>
+          <p class="item-desc">Bolillo artesanal, frijoles negros refritos, manchego gratinado y pico de gallo.</p>
+          <div class="item-footer">
+            <div class="item-tags"><span class="item-tag v">Vegetariano</span></div>
+            <div class="qty-ctrl" id="qty-3"></div>
+            <button class="add-btn" onclick="addToOrder(this, 'Molletes de la Casa', 145, 'qty-3')">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              Agregar
+            </button>
+          </div>
+        </div>
+
+        <!-- Enfrijoladas -->
+        <div class="menu-item text-card" data-cat="clasicos">
+          <div class="item-header">
+            <h3 class="item-name">Enfrijoladas <em>con Queso</em></h3>
+            <span class="item-price">$155</span>
+          </div>
+          <p class="item-desc">Tortillas en salsa de frijol negro con epazote, crema, cotija y jalapeños encurtidos.</p>
+          <div class="item-footer">
+            <div class="item-tags">
+              <span class="item-tag v">Vegetariano</span>
+              <span class="item-tag gf">Sin gluten</span>
+            </div>
+            <div class="qty-ctrl" id="qty-4"></div>
+            <button class="add-btn" onclick="addToOrder(this, 'Enfrijoladas con Queso', 155, 'qty-4')">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              Agregar
+            </button>
+          </div>
+        </div>
+
+        <!-- Bocata Breakfast -->
+        <div class="menu-item text-card" data-cat="clasicos">
+          <div class="item-header">
+            <h3 class="item-name"><em>The</em> Bocata Breakfast</h3>
+            <span class="item-price">$225</span>
+          </div>
+          <p class="item-desc">Huevos al gusto, tocino ahumado, frijoles bayos, pan artesanal, fruta y jugo natural.</p>
+          <div class="item-footer">
+            <div class="item-tags"><span class="item-tag s">Signature</span></div>
+            <div class="qty-ctrl" id="qty-5"></div>
+            <button class="add-btn" onclick="addToOrder(this, 'The Bocata Breakfast', 225, 'qty-5')">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              Agregar
+            </button>
+          </div>
+        </div>
+
+        <!-- Huevos Rancheros -->
+        <div class="menu-item text-card" data-cat="clasicos">
+          <div class="item-header">
+            <h3 class="item-name">Huevos <em>Rancheros</em></h3>
+            <span class="item-price">$158</span>
+          </div>
+          <p class="item-desc">Tortilla dorada, salsa tatemada, frijoles bayos, aguacate y queso fresco.</p>
+          <div class="item-footer">
+            <div class="item-tags">
+              <span class="item-tag v">Vegetariano</span>
+              <span class="item-tag gf">Sin gluten</span>
+            </div>
+            <div class="qty-ctrl" id="qty-17"></div>
+            <button class="add-btn" onclick="addToOrder(this, 'Huevos Rancheros', 158, 'qty-17')">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              Agregar
+            </button>
+          </div>
+        </div>
+
+        <!-- Bowl del Norte -->
+        <div class="menu-item text-card" data-cat="clasicos">
+          <div class="item-header">
+            <h3 class="item-name">Bowl <em>del Norte</em></h3>
+            <span class="item-price">$195</span>
+          </div>
+          <p class="item-desc">Machaca, papa cambray, huevo suave, frijoles, aguacate y salsa de chile morita.</p>
+          <div class="item-footer">
+            <div class="item-tags"><span class="item-tag nuevo">Nuevo</span></div>
+            <div class="qty-ctrl" id="qty-18"></div>
+            <button class="add-btn" onclick="addToOrder(this, 'Bowl del Norte', 195, 'qty-18')">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              Agregar
+            </button>
+          </div>
+        </div>
+
+        <!-- Omelette de Hongos -->
+        <div class="menu-item has-photo" data-cat="clasicos">
+          <div class="item-photo">
+            <img src="https://www.haceloconhuevos.com/wp-content/uploads/2022/02/OMELETTE-DE-HONGOS-Y-QUESO.jpg" alt="Omelette de hongos con queso de cabra" loading="lazy" />
+          </div>
+          <div class="item-body">
+            <div class="item-header">
+              <h3 class="item-name">Omelette <em>de Hongos</em></h3>
+              <span class="item-price">$172</span>
+            </div>
+            <p class="item-desc">Huevos organicos, hongos salteados, queso de cabra, espinaca y pan tostado.</p>
+            <div class="item-footer">
+              <div class="item-tags"><span class="item-tag v">Vegetariano</span></div>
+              <div class="qty-ctrl" id="qty-16"></div>
+              <button class="add-btn" onclick="addToOrder(this, 'Omelette de Hongos', 172, 'qty-16')">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bagel de Salmon — featured span-2 -->
+        <div class="menu-item featured" data-cat="clasicos">
+          <div class="item-photo">
+            <img src="https://www.thespruceeats.com/thmb/rht67xNHuUXIu8hLkG6_6B7jpqU=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/open-face-smoked-salmon-bagel-101094-hero-01-ea26c2ca36af4577b1d40e0af807754b.jpg" alt="Bagel de salmon ahumado con queso crema" loading="lazy" />
+          </div>
+          <div class="item-body">
+            <span class="featured-badge">✦ &nbsp;Signature del menú</span>
+            <div class="item-header">
+              <h3 class="item-name">Bagel <em>de Salmon</em></h3>
+              <span class="item-price">$215</span>
+            </div>
+            <p class="item-desc">Salmon ahumado, queso crema con eneldo, pepino, alcaparras y cebolla morada.</p>
+            <div class="item-footer">
+              <div class="item-tags"><span class="item-tag s">Signature</span></div>
+              <div class="qty-ctrl" id="qty-19"></div>
+              <button class="add-btn" onclick="addToOrder(this, 'Bagel de Salmon', 215, 'qty-19')">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+       
+
+      <!-- ====== BOCADILLOS ====== -->
+      <div class="cat-header reveal" data-cat="bocadillos">
+        <div>
+          <span class="cat-num">02 — Bocadillos</span>
+          <h2 class="cat-title">Para <em>compartir.</em></h2>
+        </div>
+        <p class="cat-desc">Porciones para la mesa, el café largo y la buena compañía.</p>
+      </div>
+      <div class="menu-grid" data-cat="bocadillos">
+
+         <!-- Tostadas de Atún featured -->
+        <div class="menu-item featured" data-cat="bocadillos">
+          <div class="item-photo">
+            <img src="https://cdn7.kiwilimon.com/recetaimagen/38991/640x640/50350.jpg.webp" alt="Tostadas de atún sellado con guacamole" loading="lazy" />
+          </div>
+          <div class="item-body">
+            <span class="featured-badge">✦ &nbsp;Para compartir</span>
+            <div class="item-header">
+              <h3 class="item-name">Tostadas de <em>Atún Sellado</em></h3>
+              <span class="item-price">$245</span>
+            </div>
+            <p class="item-desc">Tortilla de maíz, atún en ajonjolí, guacamole jalapeño, mayo de chipotle y microgreens.</p>
+            <div class="item-footer">
+              <div class="item-tags">
+                <span class="item-tag gf">Sin gluten</span>
+                <span class="item-tag s">Signature</span>
+              </div>
+              <div class="qty-ctrl" id="qty-7"></div>
+              <button class="add-btn" onclick="addToOrder(this, 'Tostadas de Atún Sellado', 245, 'qty-7')">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- Tabla Artesanal -->
+        <div class="menu-item has-photo" data-cat="bocadillos">
+          <div class="item-photo">
+            <img src="https://barefeetinthekitchen.com/wp-content/uploads/2018/09/Cheese-Board-5-1-of-1.jpg" alt="Tabla de quesos artesanales mexicanos" loading="lazy" />
+          </div>
+          <div class="item-body">
+            <div class="item-header">
+              <h3 class="item-name">Cheese <em>Board</em></h3>
+              <span class="item-price">$295</span>
+            </div>
+            <p class="item-desc">Quesos variados,carnes frias y variadass legumbres.</p>
+            <div class="item-footer">
+              <div class="item-tags">
+                <span class="item-tag v">Vegetariano</span>
+                <span class="item-tag s">Signature</span>
+              </div>
+              <div class="qty-ctrl" id="qty-6"></div>
+              <button class="add-btn" onclick="addToOrder(this, 'Cheese Board', 295, 'qty-6')">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Croquetas de Elote -->
+        <div class="menu-item text-card" data-cat="bocadillos">
+          <div class="item-header">
+            <h3 class="item-name">Croquetas <em>de Elote</em></h3>
+            <span class="item-price">$125</span>
+          </div>
+          <p class="item-desc">Elote dulce con epazote, dip de crema y chile de árbol. 4 piezas.</p>
+          <div class="item-footer">
+            <div class="item-tags"><span class="item-tag vg">Vegano</span></div>
+            <div class="qty-ctrl" id="qty-8"></div>
+            <button class="add-btn" onclick="addToOrder(this, 'Croquetas de Elote', 125, 'qty-8')">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              Agregar
+            </button>
+          </div>
+        </div>
+
+        <!-- Pan de Casa -->
+        <div class="menu-item text-card" data-cat="bocadillos">
+          <div class="item-header">
+            <h3 class="item-name">Pan <em>de Casa</em></h3>
+            <span class="item-price">$95</span>
+          </div>
+          <p class="item-desc">Hogaza, focaccia de hierbas y pan de semillas del horno. Con mantequilla batida.</p>
+          <div class="item-footer">
+            <div class="item-tags">
+              <span class="item-tag v">Vegetariano</span>
+              <span class="item-tag nuevo">Nuevo</span>
+            </div>
+            <div class="qty-ctrl" id="qty-9"></div>
+            <button class="add-btn" onclick="addToOrder(this, 'Pan de Casa', 95, 'qty-9')">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              Agregar
+            </button>
+          </div>
+        </div>
+
+        <!-- Guacamole -->
+        <div class="menu-item text-card" data-cat="bocadillos">
+          <div class="item-header">
+            <h3 class="item-name">Guacamole <em>de Temporada</em></h3>
+            <span class="item-price">$115</span>
+          </div>
+          <p class="item-desc">Aguacate hass, chile serrano, cilantro y limón. Con totopos de maíz azul.</p>
+          <div class="item-footer">
+            <div class="item-tags">
+              <span class="item-tag vg">Vegano</span>
+              <span class="item-tag gf">Sin gluten</span>
+            </div>
+            <div class="qty-ctrl" id="qty-10"></div>
+            <button class="add-btn" onclick="addToOrder(this, 'Guacamole de Temporada', 115, 'qty-10')">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              Agregar
+            </button>
+          </div>
+        </div>
+
+        <!-- Papas Bravas -->
+        <div class="menu-item has-photo" data-cat="bocadillos">
+          <div class="item-photo">
+            <img src="https://www.allrecipes.com/thmb/n_OOwj92X4rpCZyQ8sULHBUR95k=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/230569-chef-johns-patatas-brazas-ddmfs-2X3-0917-2e7985bf896d4ea0b1baa2a0c826ea0d.jpg" alt="Papas bravas con alioli y salsa de chile" loading="lazy" />
+          </div>
+          <div class="item-body">
+            <div class="item-header">
+              <h3 class="item-name">Papas <em>Bravas</em></h3>
+              <span class="item-price">$119</span>
+            </div>
+            <p class="item-desc">Papas crujientes, alioli de ajo rostizado, salsa de chile seco y perejil.</p>
+            <div class="item-footer">
+              <div class="item-tags"><span class="item-tag v">Vegetariano</span></div>
+              <div class="qty-ctrl" id="qty-20"></div>
+              <button class="add-btn" onclick="addToOrder(this, 'Papas Bravas', 119, 'qty-20')">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empanadas de Platano -->
+        <div class="menu-item text-card" data-cat="bocadillos">
+          <div class="item-header">
+            <h3 class="item-name">Empanadas <em>de Platano</em></h3>
+            <span class="item-price">$132</span>
+          </div>
+          <p class="item-desc">Rellenas de frijol negro y queso fresco. Con crema de chipotle dulce.</p>
+          <div class="item-footer">
+            <div class="item-tags">
+              <span class="item-tag v">Vegetariano</span>
+              <span class="item-tag nuevo">Nuevo</span>
+            </div>
+            <div class="qty-ctrl" id="qty-21"></div>
+            <button class="add-btn" onclick="addToOrder(this, 'Empanadas de Platano', 132, 'qty-21')">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              Agregar
+            </button>
+          </div>
+        </div>
+
+        <!-- Tacos de Short Rib -->
+        <div class="menu-item text-card" data-cat="bocadillos">
+          <div class="item-header">
+            <h3 class="item-name">Tacos <em>de Short Rib</em></h3>
+            <span class="item-price">$205</span>
+          </div>
+          <p class="item-desc">Tres tacos de costilla braseada, cebolla encurtida, cilantro y salsa macha.</p>
+          <div class="item-footer">
+            <div class="item-tags"><span class="item-tag s">Signature</span></div>
+            <div class="qty-ctrl" id="qty-22"></div>
+            <button class="add-btn" onclick="addToOrder(this, 'Tacos de Short Rib', 205, 'qty-22')">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              Agregar
+            </button>
+          </div>
+        </div>
+        
+        <!-- Queso Fundido -->
+        <div class="menu-item text-card" data-cat="bocadillos">
+          <div class="item-header">
+            <h3 class="item-name">Queso <em>Fundido</em></h3>
+            <span class="item-price">$205</span>
+          </div>
+          <p class="item-desc">Queso fundido con chorizo, cebolla y salsa de chile.</p>
+          <div class="item-footer">
+            <div class="item-tags"><span class="item-tag s">Signature</span></div>
+            <div class="qty-ctrl" id="qty-22"></div>
+            <button class="add-btn" onclick="addToOrder(this, 'Queso Fundido', 205, 'qty-22')">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              Agregar
+            </button>
+          </div>
+        </div>
+
+        <!-- Ensalada Verde — featured span-2 -->
+        <div class="menu-item featured" data-cat="bocadillos">
+          <div class="item-photo">
+            <img src="https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&q=80" alt="Ensalada verde con aguacate, pepino y semillas" loading="lazy" />
+          </div>
+          <div class="item-body">
+            <span class="featured-badge">✦ &nbsp;Ligero y fresco</span>
+            <div class="item-header">
+              <h3 class="item-name">Ensalada <em>Verde</em></h3>
+              <span class="item-price">$148</span>
+            </div>
+            <p class="item-desc">Hojas frescas, aguacate, pepino, semillas tostadas y vinagreta de lima real.</p>
+            <div class="item-footer">
+              <div class="item-tags">
+                <span class="item-tag vg">Vegano</span>
+                <span class="item-tag gf">Sin gluten</span>
+              </div>
+              <div class="qty-ctrl" id="qty-23"></div>
+              <button class="add-btn" onclick="addToOrder(this, 'Ensalada Verde', 148, 'qty-23')">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====== MESA DULCE ====== -->
+      <div class="cat-header reveal" data-cat="dulce">
+        <div>
+          <span class="cat-num">03 — Mesa Dulce</span>
+          <h2 class="cat-title">El <em>cierre</em><br />perfecto.</h2>
+        </div>
+        <p class="cat-desc">Del horno al plato, cada mañana nuestra repostera trabaja para que valga.</p>
+      </div>
+      <div class="menu-grid" data-cat="dulce">
+
+        <!-- Hotcakes -->
+        <div class="menu-item has-photo" data-cat="dulce">
+          <div class="item-photo">
+            <img src="https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=600&q=80" alt="Hotcakes de Buttermilk con frutos rojos" loading="lazy" />
+          </div>
+          <div class="item-body">
+            <div class="item-header">
+              <h3 class="item-name">Hotcakes <em>Buttermilk</em></h3>
+              <span class="item-price">$155</span>
+            </div>
+            <p class="item-desc">Torre esponjosa con mantequilla de miel, maple y frutos rojos de temporada.</p>
+            <div class="item-footer">
+              <div class="item-tags">
+                <span class="item-tag v">Vegetariano</span>
+                <span class="item-tag s">Signature</span>
+              </div>
+              <div class="qty-ctrl" id="qty-11"></div>
+              <button class="add-btn" onclick="addToOrder(this, 'Hotcakes Buttermilk', 155, 'qty-11')">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- French Toast -->
+        <div class="menu-item text-card" data-cat="dulce">
+          <div class="item-header">
+            <h3 class="item-name">French <em>Toast</em></h3>
+            <span class="item-price">$145</span>
+          </div>
+          <p class="item-desc">Brioche a la plancha, azúcar mascabado caramelizado, crema batida y plátano.</p>
+          <div class="item-footer">
+            <div class="item-tags"><span class="item-tag v">Vegetariano</span></div>
+            <div class="qty-ctrl" id="qty-12"></div>
+            <button class="add-btn" onclick="addToOrder(this, 'French Toast', 145, 'qty-12')">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              Agregar
+            </button>
+          </div>
+        </div>
+
+        <!-- Acaí Bowl -->
+        <div class="menu-item text-card" data-cat="dulce">
+          <div class="item-header">
+            <h3 class="item-name">Acaí <em>Bowl</em></h3>
+            <span class="item-price">$135</span>
+          </div>
+          <p class="item-desc">Base de acaí orgánico, granola artesanal, mango, fresa y miel de agave.</p>
+          <div class="item-footer">
+            <div class="item-tags">
+              <span class="item-tag vg">Vegano</span>
+              <span class="item-tag gf">Sin gluten</span>
+              <span class="item-tag nuevo">Nuevo</span>
+            </div>
+            <div class="qty-ctrl" id="qty-13"></div>
+            <button class="add-btn" onclick="addToOrder(this, 'Acaí Bowl', 135, 'qty-13')">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              Agregar
+            </button>
+          </div>
+        </div>
+
+        <!-- Waffle Labocata featured -->
+        <div class="menu-item featured" data-cat="dulce">
+          <div class="item-photo">
+            <img src="https://media-cdn.tripadvisor.com/media/photo-s/0e/2e/fb/a4/waffle-con-helado-de.jpg" alt="Waffle belga Labocata con helado de vainilla" loading="lazy" />
+          </div>
+          <div class="item-body">
+            <span class="featured-badge">✦ &nbsp;El favorito del domingo</span>
+            <div class="item-header">
+              <h3 class="item-name">Waffle <em>Labocata</em></h3>
+              <span class="item-price">$175</span>
+            </div>
+            <p class="item-desc">Waffle belga, helado de vainilla, compota de frutos rojos, nuez pecana y cacao.</p>
+            <div class="item-footer">
+              <div class="item-tags">
+                <span class="item-tag v">Vegetariano</span>
+                <span class="item-tag s">Signature</span>
+              </div>
+              <div class="qty-ctrl" id="qty-14"></div>
+              <button class="add-btn" onclick="addToOrder(this, 'Waffle Labocata', 175, 'qty-14')">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Croissant -->
+        <div class="menu-item text-card" data-cat="dulce">
+          <div class="item-header">
+            <h3 class="item-name">Croissant <em>de Mantequilla</em></h3>
+            <span class="item-price">$75</span>
+          </div>
+          <p class="item-desc">Hojaldrado en casa, dorado en horno, con mantequilla y mermelada artesanal del día.</p>
+          <div class="item-footer">
+            <div class="item-tags"><span class="item-tag v">Vegetariano</span></div>
+            <div class="qty-ctrl" id="qty-15"></div>
+            <button class="add-btn" onclick="addToOrder(this, 'Croissant de Mantequilla', 75, 'qty-15')">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              Agregar
+            </button>
+          </div>
+        </div>
+
+        <!-- Pan Frances de Guayaba -->
+        <div class="menu-item has-photo" data-cat="dulce">
+          <div class="item-photo">
+            <img src="https://tofuu.getjusto.com/orioneat-local/resized2/Zey9tjDMXdXmQE4bt-1600-x.webp" alt="Pan francés con guayaba, queso crema y frutos rojos" loading="lazy" />
+          </div>
+          <div class="item-body">
+            <div class="item-header">
+              <h3 class="item-name">Pan Frances <em>de Guayaba</em></h3>
+              <span class="item-price">$168</span>
+            </div>
+            <p class="item-desc">Brioche, compota de guayaba, queso crema batido, miel y frutos rojos.</p>
+            <div class="item-footer">
+              <div class="item-tags">
+                <span class="item-tag v">Vegetariano</span>
+                <span class="item-tag nuevo">Nuevo</span>
+              </div>
+              <div class="qty-ctrl" id="qty-24"></div>
+              <button class="add-btn" onclick="addToOrder(this, 'Pan Frances de Guayaba', 168, 'qty-24')">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Concha Tostada -->
+        <div class="menu-item text-card" data-cat="dulce">
+          <div class="item-header">
+            <h3 class="item-name">Concha <em>Tostada</em></h3>
+            <span class="item-price">$92</span>
+          </div>
+          <p class="item-desc">Concha artesanal tibia con nata montada, canela y mermelada de frutos de temporada.</p>
+          <div class="item-footer">
+            <div class="item-tags"><span class="item-tag v">Vegetariano</span></div>
+            <div class="qty-ctrl" id="qty-25"></div>
+            <button class="add-btn" onclick="addToOrder(this, 'Concha Tostada', 92, 'qty-25')">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              Agregar
+            </button>
+          </div>
+        </div>
+
+        <!-- Parfait Tropical -->
+        <div class="menu-item text-card" data-cat="dulce">
+          <div class="item-header">
+            <h3 class="item-name">Parfait <em>Tropical</em></h3>
+            <span class="item-price">$128</span>
+          </div>
+          <p class="item-desc">Yogurt griego, granola, piña asada, mango, coco tostado y miel de azahar.</p>
+          <div class="item-footer">
+            <div class="item-tags"><span class="item-tag gf">Sin gluten</span></div>
+            <div class="qty-ctrl" id="qty-26"></div>
+            <button class="add-btn" onclick="addToOrder(this, 'Parfait Tropical', 128, 'qty-26')">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              Agregar
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ALLERGEN NOTE -->
+    <div class="allergen-note" role="note">
+      <div class="allergen-icon" aria-hidden="true">i</div>
+      <p>
+        <strong>Alérgenos e ingredientes:</strong> Si tienes alguna alergia o intolerancia, notifica a tu mesero antes de ordenar.
+        Podemos adaptar varios platillos. Nuestra cocina maneja gluten, lácteos, nueces y mariscos.
+      </p>
+    </div>
+
+    <!-- BEBIDAS — header de sección -->
+    <section class="bebidas-section" id="bebidasSection" data-cat-section="bebidas">
+      <div class="bebidas-header">
+        <div>
+          <span class="bebidas-label">04 — Bebidas</span>
+          <h2 class="bebidas-title">Para <em>despertar.</em></h2>
+        </div>
+        <p class="bebidas-subtitle">Café de especialidad, jugos naturales y licuados.</p>
+      </div>
+    </section>
+
+    <!-- FILTROS DE BEBIDAS — sticky, -->
+    <nav class="bebidas-filter-bar" id="bebidasFilterBar" role="navigation" aria-label="Filtrar bebidas">
+      <button class="bebidas-filter-btn active" data-drink-filter="todas">Todas las bebidas</button>
+      <div class="filter-divider"></div>
+      <button class="bebidas-filter-btn" data-drink-filter="caliente">Calientes</button>
+      <div class="filter-divider"></div>
+      <button class="bebidas-filter-btn" data-drink-filter="fria">Frías</button>
+      <div class="filter-divider"></div>
+      <button class="bebidas-filter-btn" data-drink-filter="jugo">Jugos &amp; Licuados</button>
+    </nav>
+
+    <!-- GRIDS DE BEBIDAS -->
+    <div id="bebidasGrids">
+
+      <!-- Café de Olla — caliente, featured -->
+      <div class="menu-grid bebidas-grid" data-drink-cat="caliente">
+        <div class="cat-header bebidas-subheader" data-drink-cat="caliente">
+          <div>
+            <span class="cat-num">Bebidas Calientes</span>
+            <h2 class="cat-title">Calidez en <em>cada taza.</em></h2>
+          </div>
+          <p class="cat-desc">Café de especialidad, matcha y chocolate preparados al momento.</p>
+        </div>
+
+        <!-- Café de Olla — featured -->
+        <div class="menu-item featured" data-cat="bebidas" data-drink="caliente">
+          <div class="item-photo">
+            <img src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800&q=80" alt="Café de Olla tradicional mexicano" loading="lazy" />
+          </div>
+          <div class="item-body">
+            <span class="featured-badge">✦ &nbsp;La bebida de la casa</span>
+            <div class="item-header">
+              <h3 class="item-name">Café de <em>Olla</em></h3>
+              <span class="item-price">$55</span>
+            </div>
+            <p class="item-desc">Canela y piloncillo al estilo tradicional. Reconfortante y profundamente nuestro.</p>
+            <div class="item-footer">
+              <div class="item-tags"><span class="item-tag vg">Vegano</span></div>
+              <div class="qty-ctrl" id="qty-b1"></div>
+              <button class="add-btn" onclick="addToOrder(this, 'Café de Olla', 55, 'qty-b1')">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cappuccino Bocata -->
+        <div class="menu-item has-photo" data-cat="bebidas" data-drink="caliente">
+          <div class="item-photo">
+            <img src="https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=600&q=80" alt="Cappuccino Bocata con latte art" loading="lazy" />
+          </div>
+          <div class="item-body">
+            <div class="item-header">
+              <h3 class="item-name">Cappuccino <em>Bocata</em></h3>
+              <span class="item-price">$69</span>
+            </div>
+            <p class="item-desc">Doble shot de espresso, leche texturizada y cacao. Nuestra versión del clásico.</p>
+            <div class="item-footer">
+              <div class="item-tags"></div>
+              <div class="qty-ctrl" id="qty-b6"></div>
+              <button class="add-btn" onclick="addToOrder(this, 'Cappuccino Bocata', 69, 'qty-b6')">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Matcha Latte -->
+        <div class="menu-item has-photo" data-cat="bebidas" data-drink="caliente">
+          <div class="item-photo">
+            <img src="https://images.unsplash.com/photo-1515823064-d6e0c04616a7?w=600&q=80" alt="Matcha Latte ceremonial con leche de avena" loading="lazy" />
+          </div>
+          <div class="item-body">
+            <div class="item-header">
+              <h3 class="item-name">Matcha <em>Latte</em></h3>
+              <span class="item-price">$89</span>
+            </div>
+            <p class="item-desc">Matcha ceremonial con leche de avena o entera, miel de agave.</p>
+            <div class="item-footer">
+              <div class="item-tags"><span class="item-tag vg">Vegano</span></div>
+              <div class="qty-ctrl" id="qty-b4"></div>
+              <button class="add-btn" onclick="addToOrder(this, 'Matcha Latte', 89, 'qty-b4')">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chocolate Oaxaqueño -->
+        <div class="menu-item text-card" data-cat="bebidas" data-drink="caliente">
+          <div class="item-header">
+            <h3 class="item-name">Chocolate <em>Oaxaqueño</em></h3>
+            <span class="item-price">$78</span>
+          </div>
+          <p class="item-desc">Cacao, canela y piloncillo. Con leche entera o de avena.</p>
+          <div class="item-footer">
+            <div class="item-tags"><span class="item-tag v">Vegetariano</span></div>
+            <div class="qty-ctrl" id="qty-b10"></div>
+            <button class="add-btn" onclick="addToOrder(this, 'Chocolate Oaxaqueño', 78, 'qty-b10')">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              Agregar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- FRÍAS -->
+      <div class="menu-grid bebidas-grid" data-drink-cat="fria">
+        <div class="cat-header bebidas-subheader" data-drink-cat="fria">
+          <div>
+            <span class="cat-num">Bebidas Frías</span>
+            <h2 class="cat-title">Frescura para <em>el puerto.</em></h2>
+          </div>
+          <p class="cat-desc">Cold brew, aguas frescas y bebidas para el calor de Coatzacoalcos.</p>
+        </div>
+
+        <!-- Carajillo Frío — featured -->
+        <div class="menu-item featured" data-cat="bebidas" data-drink="fria">
+          <div class="item-photo">
+            <img src="https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=600&q=80" alt="Carajillo frío con espresso y licor" loading="lazy" />
+          </div>
+          <div class="item-body">
+            <span class="featured-badge">✦ &nbsp;Firma del brunch</span>
+            <div class="item-header">
+              <h3 class="item-name">Carajillo <em>Frío</em></h3>
+              <span class="item-price">$145</span>
+            </div>
+            <p class="item-desc">Espresso, licor 43, hielo grande y twist de naranja. Para sobremesa de brunch.</p>
+            <div class="item-footer">
+              <div class="item-tags"><span class="item-tag s">Signature</span></div>
+              <div class="qty-ctrl" id="qty-b12"></div>
+              <button class="add-btn" onclick="addToOrder(this, 'Carajillo Frío', 145, 'qty-b12')">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cold Brew -->
+        <div class="menu-item has-photo" data-cat="bebidas" data-drink="fria">
+          <div class="item-photo">
+            <img src="https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=600&q=80" alt="Cold Brew extracción en frío 24 horas" loading="lazy" />
+          </div>
+          <div class="item-body">
+            <div class="item-header">
+              <h3 class="item-name">Cold <em>Brew</em></h3>
+              <span class="item-price">$75</span>
+            </div>
+            <p class="item-desc">Extracción en frío 24 h. Suave, concentrado. Con o sin leche de avena.</p>
+            <div class="item-footer">
+              <div class="item-tags"><span class="item-tag gf">Sin gluten</span></div>
+              <div class="qty-ctrl" id="qty-b2"></div>
+              <button class="add-btn" onclick="addToOrder(this, 'Cold Brew', 75, 'qty-b2')">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Espresso Tonic -->
+        <div class="menu-item has-photo" data-cat="bebidas" data-drink="fria">
+          <div class="item-photo">
+            <img src="https://images.unsplash.com/photo-1497534446932-c925b458314e?w=600&q=80" alt="Espresso tonic con hielo y cítricos" loading="lazy" />
+          </div>
+          <div class="item-body">
+            <div class="item-header">
+              <h3 class="item-name">Espresso <em>Tonic</em></h3>
+              <span class="item-price">$82</span>
+            </div>
+            <p class="item-desc">Espresso doble, tónica seca, hielo y piel de naranja. Refrescante y brillante.</p>
+            <div class="item-footer">
+              <div class="item-tags"></div>
+              <div class="qty-ctrl" id="qty-b9"></div>
+              <button class="add-btn" onclick="addToOrder(this, 'Espresso Tonic', 82, 'qty-b9')">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mimosa de Mango -->
+        <div class="menu-item text-card" data-cat="bebidas" data-drink="fria">
+          <div class="item-header">
+            <h3 class="item-name">Mimosa de <em>Mango</em></h3>
+            <span class="item-price">$125</span>
+          </div>
+          <p class="item-desc">Champagne brut con puré de mango Ataulfo de temporada. La bebida del brunch.</p>
+          <div class="item-footer">
+            <div class="item-tags"><span class="item-tag nuevo">Temporada</span></div>
+            <div class="qty-ctrl" id="qty-b7"></div>
+            <button class="add-btn" onclick="addToOrder(this, 'Mimosa de Mango', 125, 'qty-b7')">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              Agregar
+            </button>
+          </div>
+        </div>
+
+        <!-- Agua de Jamaica -->
+        <div class="menu-item text-card" data-cat="bebidas" data-drink="fria">
+          <div class="item-header">
+            <h3 class="item-name">Agua de <em>Jamaica</em></h3>
+            <span class="item-price">$55</span>
+          </div>
+          <p class="item-desc">Jamaica con jengibre, canela y naranja. Tradicional y refrescante.</p>
+          <div class="item-footer">
+            <div class="item-tags"><span class="item-tag vg">Vegano</span></div>
+            <div class="qty-ctrl" id="qty-b5"></div>
+            <button class="add-btn" onclick="addToOrder(this, 'Agua de Jamaica', 55, 'qty-b5')">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              Agregar
+            </button>
+          </div>
+        </div>
+
+        <!-- Limonada de Pepino -->
+        <div class="menu-item text-card" data-cat="bebidas" data-drink="fria">
+          <div class="item-header">
+            <h3 class="item-name">Limonada <em>de Pepino</em></h3>
+            <span class="item-price">$64</span>
+          </div>
+          <p class="item-desc">Limón real, pepino, hierbabuena y agua mineral. Fresca para el calor del puerto.</p>
+          <div class="item-footer">
+            <div class="item-tags"><span class="item-tag vg">Vegano</span></div>
+            <div class="qty-ctrl" id="qty-b11"></div>
+            <button class="add-btn" onclick="addToOrder(this, 'Limonada de Pepino', 64, 'qty-b11')">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              Agregar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- JUGOS & LICUADOS -->
+      <div class="menu-grid bebidas-grid" data-drink-cat="jugo">
+        <div class="cat-header bebidas-subheader" data-drink-cat="jugo">
+          <div>
+            <span class="cat-num">Jugos &amp; Licuados</span>
+            <h2 class="cat-title">Natural desde <em>adentro.</em></h2>
+          </div>
+          <p class="cat-desc">Fruta fresca, verduras de temporada y nada más.</p>
+        </div>
+
+        <!-- Jugo Verde Detox — featured -->
+        <div class="menu-item featured" data-cat="bebidas" data-drink="jugo">
+          <div class="item-photo">
+            <img src="https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=800&q=80" alt="Jugo Verde Detox con pepino y jengibre" loading="lazy" />
+          </div>
+          <div class="item-body">
+            <span class="featured-badge">✦ &nbsp;El favorito del brunch</span>
+            <div class="item-header">
+              <h3 class="item-name">Jugo Verde <em>Detox</em></h3>
+              <span class="item-price">$85</span>
+            </div>
+            <p class="item-desc">Pepino, apio, manzana verde, limón, jengibre y espinaca. Puro y energizante.</p>
+            <div class="item-footer">
+              <div class="item-tags"><span class="item-tag vg">Vegano</span><span class="item-tag gf">Sin gluten</span></div>
+              <div class="qty-ctrl" id="qty-b3"></div>
+              <button class="add-btn" onclick="addToOrder(this, 'Jugo Verde Detox', 85, 'qty-b3')">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Licuado de Temporada -->
+        <div class="menu-item has-photo" data-cat="bebidas" data-drink="jugo">
+          <div class="item-photo">
+            <img src="https://images.unsplash.com/photo-1553530666-ba11a7da3888?w=600&q=80" alt="Licuado de fruta de temporada con leche de coco" loading="lazy" />
+          </div>
+          <div class="item-body">
+            <div class="item-header">
+              <h3 class="item-name">Licuado <em>de Temporada</em></h3>
+              <span class="item-price">$79</span>
+            </div>
+            <p class="item-desc">Fruta fresca del día, leche o agua de coco y miel. Pregunta cuál tenemos hoy.</p>
+            <div class="item-footer">
+              <div class="item-tags"><span class="item-tag nuevo">Del día</span></div>
+              <div class="qty-ctrl" id="qty-b8"></div>
+              <button class="add-btn" onclick="addToOrder(this, 'Licuado de Temporada', 79, 'qty-b8')">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /bebidasGrids -->
+
+    <!-- LAST ORDER -->
+    <section class="promo-band last-order-section" id="lastOrderSection">
+      <div>
+        <span class="promo-label">Seguimiento de pedido</span>
+        <h2 class="promo-title">Tu último<br /><em>pedido</em>.</h2>
+        <p class="promo-text">
+          Cuando confirmes una orden, aquí quedará un resumen rápido con número, total y platillos.
+          Así puedes repetirla o revisar qué enviaste sin buscar en WhatsApp.
+        </p>
+        <div class="promo-actions">
+          <button class="btn-gold" type="button" onclick="toggleOrder(true)">Ver orden actual</button>
+          <button class="btn-ivory-ghost" type="button" onclick="repeatLastOrder()">Repetir último</button>
+        </div>
+      </div>
+      <div class="last-order-card" id="lastOrderCard">
+        <span class="last-order-kicker">Aún no hay pedidos confirmados</span>
+        <h3>Tu siguiente orden aparecerá aquí.</h3>
+        <p>Agrega platillos desde el menú y confirma por WhatsApp para guardar el resumen.</p>
+        <div class="last-order-empty">
+          <span>0</span>
+          items guardados
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+      <div class="footer-top">
+        <div>
+          <span class="footer-logo">Labocata.</span>
+          <p class="footer-tagline">El arte del brunch. Ingredientes honestos, ambiente cálido y momentos que permanecen.</p>
+          <div class="social-links">
+            <a href="https://www.instagram.com/la_bocata_restaurante/" class="social-link" target="_blank" rel="noopener">Instagram</a>
+            <a href="https://www.facebook.com/p/La-Bocata-Coatza-100090747382011/" class="social-link" target="_blank" rel="noopener">Facebook</a>
+            <a href="https://www.tiktok.com/@la.bocata.coatza" class="social-link" target="_blank" rel="noopener">TikTok</a>
+          </div>
+        </div>
+        <div class="footer-col">
+          <h4>Visitar</h4>
+          <ul>
+            <li><a href="#menuBody">Menú completo</a></li>
+            <li><a href="Localesreservas.html#reservaciones">Reservaciones</a></li>
+            <li><a href="#lastOrderSection">Último pedido</a></li>
+            <li><a href="#orderPanel" onclick="toggleOrder(true); return false;">Ordenar ahora</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Nosotros</h4>
+          <ul>
+            <li><a href="Nosotros.html#historia">Nuestra historia</a></li>
+            <li><a href="Nosotros.html#fundadora">El equipo</a></li>
+            <li><a href="Nosotros.html#proveedores">Proveedores</a></li>
+            <li><a href="Nosotros.html#prensa">Prensa</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Contacto</h4>
+          <ul>
+            <li><a href="Localesreservas.html">Coatzacoalcos, Ver.</a></li>
+            <li><a href="mailto:hola@labocata.mx">hola@labocata.mx</a></li>
+            <li><a href="tel:+529210000000">+52 921 000 0000</a></li>
+            <li><a href="https://wa.me/529210000000" target="_blank" rel="noopener">WhatsApp</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span class="footer-copy">© Labocata 2025 — Todos los derechos reservados.</span>
+        <div class="footer-legal">
+          <a href="Localesreservas.html#reservaciones">Términos</a>
+          <a href="mailto:hola@labocata.mx">Privacidad</a>
+          <a href="mailto:hola@labocata.mx">Cookies</a>
+        </div>
+      </div>
+    </footer>
+
+    <section class="admin-entry" aria-label="Acceso administrativo">
+      <span>Acceso interno</span>
+      <a href="Admin.html">Admin</a>
+    </section>
+
+    <script src="../page-transition.js" defer></script>
+    <script src="JavaScript.js" defer></script>
+  </body>
+</html>
