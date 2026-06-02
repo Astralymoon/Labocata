@@ -1580,14 +1580,16 @@ nav.nav-menu-closing.scrolled .nav-cta {
   overflow: hidden;
   width: 100%;
 }
+
 .testi-track {
-   display: flex;
+  display: flex;
   flex-wrap: nowrap;
   transition: transform 0.7s cubic-bezier(0.76, 0, 0.24, 1);
   will-change: transform;
 }
+
 .testimonial-card {
-flex: 0 0 100%;
+  flex: 0 0 100%;
   width: 100%;
   min-width: 0;
   padding: 0 72px 20px;
