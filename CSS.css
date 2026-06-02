@@ -1584,7 +1584,9 @@ nav.nav-menu-closing.scrolled .nav-cta {
   transition: transform 0.7s cubic-bezier(0.76, 0, 0.24, 1);
 }
 .testimonial-card {
-  min-width: 100%;
+  flex: 0 0 100%;   /* no crece · no encoge · ocupa EXACTAMENTE 100% */
+  width: 100%;
+  min-width: 0; /* remplazado   min-width: 100%;   /* ← no garantiza el ancho real */
   padding: 0 72px 20px;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
