@@ -2475,3 +2475,8 @@ footer {
   }
 }
 
+@media (max-width: 768px) {
+  .testimonial-card {
+    grid-template-columns: 1fr;
+  }
+}
