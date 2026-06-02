@@ -1,4 +1,4 @@
-*,
+﻿*,
 *::before,
 *::after {
   margin: 0;
@@ -61,7 +61,7 @@ html {
   outline-offset: 3px;
 }
 /* ===========================
-     NAV — Hamburger style
+     NAV â€” Hamburger style
   =========================== */
 nav {
   position: fixed;
@@ -93,17 +93,17 @@ nav.scrolled {
   position: relative;
   z-index: 201;
 }
-/* Scrolled + menu closed → dark */
+/* Scrolled + menu closed â†’ dark */
 nav.scrolled .nav-logo {
   color: var(--espresso);
 }
 
-/* Menu open, transparent nav → white */
+/* Menu open, transparent nav â†’ white */
 nav.nav-menu-open .nav-logo {
   color: var(--ivory) !important;
 }
 
-/* Menu open + scrolled → dark (mismo que el burger) */
+/* Menu open + scrolled â†’ dark (mismo que el burger) */
 nav.nav-menu-open.scrolled .nav-logo {
   color: var(--espresso) !important;
 }
@@ -134,7 +134,7 @@ nav.nav-menu-closing.scrolled .nav-logo {
 .nav-burger span {
   display: block;
   height: 1px;
-  background: var(--ivory); /* default: transparent nav → white */
+  background: var(--ivory); /* default: transparent nav â†’ white */
   transition:
     transform 0.5s cubic-bezier(0.76, 0, 0.24, 1),
     opacity 0.3s,
@@ -152,17 +152,17 @@ nav.nav-menu-closing.scrolled .nav-logo {
   width: 32px;
 }
 
-/* Scrolled + menu closed → dark lines */
+/* Scrolled + menu closed â†’ dark lines */
 nav.scrolled .nav-burger span {
   background: var(--espresso);
 }
 
-/* Menu open, transparent nav → white */
+/* Menu open, transparent nav â†’ white */
 nav.nav-menu-open .nav-burger span {
   background: var(--ivory) !important;
 }
 
-/* Menu open + scrolled → dark (espresso) */
+/* Menu open + scrolled â†’ dark (espresso) */
 nav.nav-menu-open.scrolled .nav-burger span {
   background: var(--espresso) !important;
 }
@@ -208,19 +208,19 @@ nav.nav-menu-open .nav-burger span:nth-child(3) {
   position: relative;
   z-index: 201;
 }
-/* Scrolled + menu closed → dark */
+/* Scrolled + menu closed â†’ dark */
 nav.scrolled .nav-cta {
   color: var(--espresso);
   border-color: var(--bronze);
 }
 
-/* Menu open, transparent nav → white */
+/* Menu open, transparent nav â†’ white */
 nav.nav-menu-open .nav-cta {
   color: var(--ivory);
   border-color: rgba(250, 247, 242, 0.45);
 }
 
-/* Menu open + scrolled → dark (misma lógica que logo y burger) */
+/* Menu open + scrolled â†’ dark (misma lÃ³gica que logo y burger) */
 nav.nav-menu-open.scrolled .nav-cta {
   color: var(--espresso) !important;
   border-color: var(--bronze) !important;
@@ -255,7 +255,7 @@ nav.nav-menu-closing.scrolled .nav-cta {
   visibility: hidden;
 }
 
-/* Left panel — dark */
+/* Left panel â€” dark */
 .fullmenu-left {
   background: var(--espresso);
   padding: 140px 72px 80px;
@@ -266,7 +266,7 @@ nav.nav-menu-closing.scrolled .nav-cta {
   transition: clip-path 0.7s cubic-bezier(0.76, 0, 0.24, 1);
 }
 
-/* Right panel — image */
+/* Right panel â€” image */
 .fullmenu-right {
   position: relative;
   overflow: hidden;
@@ -634,11 +634,11 @@ nav.nav-menu-closing.scrolled .nav-cta {
   gap: 20px;
 }
 .btn-ghost::after {
-  content: "→";
+  content: "â†’";
   font-size: 1rem;
 }
 
-/* btn-ghost sobre fondo claro (intro, cream) → espresso */
+/* btn-ghost sobre fondo claro (intro, cream) â†’ espresso */
 .intro-text .btn-ghost {
   color: var(--espresso);
 }
@@ -707,7 +707,7 @@ nav.nav-menu-closing.scrolled .nav-cta {
   gap: 40px;
 }
 .strip-item::after {
-  content: "✦";
+  content: "âœ¦";
   color: var(--bronze);
   font-size: 0.5rem;
 }
@@ -1068,7 +1068,7 @@ nav.nav-menu-closing.scrolled .nav-cta {
   overflow: hidden;
 }
 .menu-section::before {
-  content: "MENÚ";
+  content: "MENÃš";
   position: absolute;
   top: 50%;
   left: 50%;
@@ -1118,7 +1118,7 @@ nav.nav-menu-closing.scrolled .nav-cta {
   gap: 20px;
 }
 .menu-link::after {
-  content: "→";
+  content: "â†’";
 }
 
 /* New image-card grid */
@@ -1370,7 +1370,7 @@ nav.nav-menu-closing.scrolled .nav-cta {
 
 /* PHILOSOPHY */
 /* ===========================
-     FILOSOFÍA — reconstruido
+     FILOSOFÃA â€” reconstruido
   =========================== */
 .philosophy {
   padding: 160px 72px;
@@ -1385,7 +1385,7 @@ nav.nav-menu-closing.scrolled .nav-cta {
   top: 120px;
 }
 
-/* Label específico para filosofía — sin depender de herencia ni !important */
+/* Label especÃ­fico para filosofÃ­a â€” sin depender de herencia ni !important */
 .philo-label {
   font-family: "Syne", sans-serif;
   font-size: 0.65rem;
@@ -1534,7 +1534,7 @@ nav.nav-menu-closing.scrolled .nav-cta {
   position: relative;
 }
 .testimonials::before {
-  content: "❝";
+  content: "â";
   position: absolute;
   top: 60px;
   left: 50%;
@@ -1578,20 +1578,13 @@ nav.nav-menu-closing.scrolled .nav-cta {
 .testi-carousel-wrap {
   position: relative;
   overflow: hidden;
-  width: 100%;
 }
-
 .testi-track {
   display: flex;
-  flex-wrap: nowrap;
   transition: transform 0.7s cubic-bezier(0.76, 0, 0.24, 1);
-  will-change: transform;
 }
-
 .testimonial-card {
-  flex: 0 0 100%;
-  width: 100%;
-  min-width: 0;
+  min-width: 100%;
   padding: 0 72px 20px;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
@@ -2062,7 +2055,7 @@ footer {
 }
 
 /* ===========================
-     SUCURSALES — HIGHLIGHTED HOUSES
+     SUCURSALES â€” HIGHLIGHTED HOUSES
   =========================== */
 .sucursales {
   background: var(--espresso);
@@ -2207,7 +2200,7 @@ footer {
   gap: 20px;
 }
 .sucursales-footer-link::after {
-  content: "→";
+  content: "â†’";
 }
 
 /* RIGHT: image panel */
@@ -2299,7 +2292,7 @@ footer {
   gap: 18px;
 }
 .sucursal-img-cta::after {
-  content: "→";
+  content: "â†’";
 }
 
 .sucursal-img-num {
@@ -2475,8 +2468,44 @@ footer {
   }
 }
 
+
 @media (max-width: 768px) {
+  html {
+    scrollbar-width: none;
+    scrollbar-gutter: auto;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+  }
+
+  .testimonials-inner {
+    padding: 0;
+  }
+
+  .testi-carousel-wrap {
+    width: 100%;
+    overflow: hidden;
+  }
+
   .testimonial-card {
+    flex: 0 0 100%;
+    min-width: 100%;
+    width: 100%;
     grid-template-columns: 1fr;
+    gap: 0;
+    padding: 0 0 20px;
+  }
+
+  .testimonial-card .testi-item {
+    display: none;
+    width: 100%;
+  }
+
+  .testimonial-card .testi-item.is-mobile-active {
+    display: block;
   }
 }
