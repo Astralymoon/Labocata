@@ -2626,3 +2626,8 @@ footer {
     align-self: stretch;
   }
 }
+@media (max-width: 768px) {
+  .sucursal-img-info {
+    display: none;
+  }
+}
