@@ -75,35 +75,28 @@ sucursalItems.forEach((item) => {
 
 // ——— TESTIMONIALS CAROUSEL ———
 const testiTrack = document.getElementById("testiTrack");
-const testiDots = document.querySelectorAll(".testi-dot");
+const testiDotsWrap = document.querySelector(".testi-dots");
+const cards = Array.from(document.querySelectorAll(".testi-track > .testimonial-card"));
 let testiCurrent = 0;
-const testiTotal = document.querySelectorAll(
-  ".testi-track > .testimonial-card",
-).length;
 let testiPaused = false;
 
 function goToSlide(idx) {
-  testiCurrent = (idx + testiTotal) % testiTotal;
+  testiCurrent = ((idx % cards.length) + cards.length) % cards.length;
   testiTrack.style.transform = `translateX(-${testiCurrent * 100}%)`;
-  testiDots.forEach((d, i) => d.classList.toggle("active", i === testiCurrent));
+  testiDotsWrap.querySelectorAll(".testi-dot")
+    .forEach((d, i) => d.classList.toggle("active", i === testiCurrent));
 }
 
-document
-  .getElementById("testiBtnNext")
-  .addEventListener("click", () => goToSlide(testiCurrent + 1));
-document
-  .getElementById("testiBtnPrev")
-  .addEventListener("click", () => goToSlide(testiCurrent - 1));
-testiDots.forEach((dot) => {
+document.getElementById("testiBtnNext").addEventListener("click", () => goToSlide(testiCurrent + 1));
+document.getElementById("testiBtnPrev").addEventListener("click", () => goToSlide(testiCurrent - 1));
+testiDotsWrap.querySelectorAll(".testi-dot").forEach((dot) => {
   dot.addEventListener("click", () => goToSlide(+dot.dataset.slide));
 });
 
-// Pause on hover
 const testiSection = document.querySelector(".testimonials");
 testiSection.addEventListener("mouseenter", () => (testiPaused = true));
 testiSection.addEventListener("mouseleave", () => (testiPaused = false));
 
-// Auto-advance every 10s
 setInterval(() => {
   if (!testiPaused) goToSlide(testiCurrent + 1);
 }, 10000);
