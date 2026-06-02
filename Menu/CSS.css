@@ -933,12 +933,10 @@ nav.scrolled .cart-count-badge { background: var(--gold); color: var(--espresso)
 .admin-preview-item {
   cursor: default;
 }
-.admin-preview-stage .menu-item.featured,
-.admin-preview-stage .bebida-item.bebida-featured {
+.admin-preview-stage .menu-item.featured {
   grid-template-columns: 1fr;
 }
-.admin-preview-stage .menu-item.featured .item-photo,
-.admin-preview-stage .bebida-item.bebida-featured .bebida-photo {
+.admin-preview-stage .menu-item.featured .item-photo {
   min-height: 180px;
 }
 .admin-preview-stage .add-btn {
@@ -1104,7 +1102,7 @@ nav.scrolled .cart-count-badge { background: var(--gold); color: var(--espresso)
 
 /* ── GLOBAL HOVER SYSTEM — ONE rule for all cards ── */
 /* Every card: same lift, same shadow, same speed */
-.menu-item, .bebida-item {
+.menu-item {
   background: var(--ivory);
   position: relative; overflow: hidden; cursor: pointer;
   display: flex; flex-direction: column;
@@ -1114,7 +1112,7 @@ nav.scrolled .cart-count-badge { background: var(--gold); color: var(--espresso)
     transform  var(--t-base) var(--ease),
     background var(--t-base) var(--ease);
 }
-.menu-item:hover, .bebida-item:hover {
+.menu-item:hover {
   background: var(--cream);
   box-shadow: var(--shadow-sm);
   z-index: 2;
@@ -1132,7 +1130,6 @@ nav.scrolled .cart-count-badge { background: var(--gold); color: var(--espresso)
 }
 /* Consistent image grading across ALL images */
 .item-photo img,
-.bebida-item .bebida-photo img,
 .promo-image img {
   width: 100%; height: 100%; object-fit: cover; display: block;
   transition: transform var(--t-slow) var(--ease), filter var(--t-base) var(--ease);
@@ -1140,7 +1137,6 @@ nav.scrolled .cart-count-badge { background: var(--gold); color: var(--espresso)
   will-change: transform;
 }
 .menu-item.has-photo:hover .item-photo img,
-.bebida-item:hover .bebida-photo img,
 .promo-band:hover .promo-image img {
   transform: scale(1.05);
   filter: brightness(0.97) contrast(1.04) saturate(0.94) sepia(0.03);
@@ -1278,12 +1274,6 @@ nav.scrolled .cart-count-badge { background: var(--gold); color: var(--espresso)
   color: var(--espresso); min-width: 20px; text-align: center;
 }
 
-/* Bebidas footer */
-.bebida-item .item-footer {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 8px; margin-top: var(--sp-2);
-}
-
 /* ── ALLERGEN ── */
 .allergen-note {
   background: var(--cream);
@@ -1301,7 +1291,10 @@ nav.scrolled .cart-count-badge { background: var(--gold); color: var(--espresso)
 .allergen-note p strong { font-weight: 500; color: var(--espresso); }
 
 /* ── BEBIDAS ── */
-.bebidas-section { padding: var(--sp-6) var(--page-pad); background: var(--ivory); }
+.bebidas-section {
+  padding: var(--sp-6) var(--page-pad) var(--sp-4);
+  background: var(--ivory);
+}
 .bebidas-header {
   display: flex; align-items: flex-end; justify-content: space-between;
   margin-bottom: var(--sp-4);
@@ -1316,72 +1309,90 @@ nav.scrolled .cart-count-badge { background: var(--gold); color: var(--espresso)
 .bebidas-title {
   font-family: "DM Serif Display", serif;
   font-size: clamp(2.2rem, 4vw, 4.2rem);
-  line-height: 0.92;
-  color: var(--espresso);
+  line-height: 0.92; color: var(--espresso);
 }
 .bebidas-title em { font-style: italic; color: var(--bronze); }
 .bebidas-subtitle {
   font-size: 1rem; font-weight: 300; color: var(--warm-grey);
   max-width: 300px; text-align: right; line-height: 1.65;
 }
-.bebidas-list {
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  gap: 1px; background: rgba(155,111,62,0.10);
+
+/* ── BARRA DE FILTROS DE BEBIDAS — idéntica a .filter-section ── */
+.bebidas-filter-bar {
+  position: sticky;
+  top: var(--nav-h-scrolled);
+  z-index: 100;
+  background: rgba(250,247,242,0.97);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(155,111,62,0.12);
+  transition: top var(--t-base) var(--ease);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--page-pad);
+  overflow-x: auto;
+  scrollbar-width: none;
 }
-.bebidas-list .bebida-featured {
-  grid-column: span 2;
-  display: grid !important;
-  grid-template-columns: 1fr 1fr;
+.bebidas-filter-bar::-webkit-scrollbar { display: none; }
+.bebidas-filter-btn {
+  font-family: "Syne", sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  background: none; border: none;
+  padding: 18px var(--sp-3);
+  color: var(--warm-grey);
+  transition: color var(--t-base) var(--ease);
+  white-space: nowrap;
+  position: relative; flex-shrink: 0;
 }
-.bebidas-list .bebida-featured.full-row {
+.bebidas-filter-btn::after {
+  content: "";
+  position: absolute;
+  bottom: 0; left: var(--sp-3); right: var(--sp-3);
+  height: 2px;
+  background: var(--bronze);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform var(--t-base) var(--ease);
+}
+.bebidas-filter-btn:hover { color: var(--espresso); }
+.bebidas-filter-btn.active { color: var(--espresso); font-weight: 600; }
+.bebidas-filter-btn.active::after { transform: scaleX(1); }
+
+/* Sub-headers dentro de bebidas */
+.bebidas-subheader {
   grid-column: 1 / -1;
-  grid-template-columns: 1fr 2fr;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: var(--sp-5) var(--sp-4) var(--sp-4);
+  border-bottom: 1px solid rgba(155,111,62,0.08);
+  background: var(--ivory) !important;
+  cursor: default;
 }
-/* bebida-item uses global .bebida-item hover above */
-.bebida-item { background: var(--ivory); display: flex; flex-direction: column; }
-.bebida-item:hover .bebida-body { background: var(--cream); }
-.bebida-item .bebida-photo {
-  width: 100%; aspect-ratio: 4/3; overflow: hidden; flex-shrink: 0;
+.bebidas-subheader:hover {
+  background: var(--ivory) !important;
+  box-shadow: none !important;
+  transform: none !important;
 }
-.bebida-item.bebida-featured .bebida-photo {
-  aspect-ratio: unset; flex: 1; min-height: 260px;
-}
-.bebida-item .bebida-body {
-  padding: var(--sp-3) var(--sp-3) var(--sp-4);
-  flex: 1; display: flex; flex-direction: column;
+.bebidas-subheader .cat-desc { text-align: right; max-width: 280px; }
+
+/* Wrapper de grids de bebidas */
+#bebidasGrids {
   background: var(--ivory);
-  transition: background var(--t-base) var(--ease);
+  padding: 0 var(--page-pad) var(--sp-6);
 }
-.bebida-item.bebida-featured .bebida-body {
-  background: var(--cream);
-  justify-content: center;
+
+/* Grid de bebidas: override background para que el gap sea ivory, no crema */
+.bebidas-grid {
+  margin-bottom: 0;
+  background: var(--ivory);
+  gap: 1px;
 }
-.bebida-item.bebida-featured:hover .bebida-body { background: #ede8dc; }
-.bebida-item.no-photo { padding: var(--sp-4) var(--sp-3); }
-.bebida-item.no-photo .bebida-body { padding: 0; }
-.bebida-num {
-  font-family: "Syne", sans-serif; font-size: 0.48rem; letter-spacing: 0.26em; text-transform: uppercase;
-  color: var(--bronze); margin-bottom: var(--sp-1); display: block;
-}
-.bebida-name {
-  font-family: "DM Serif Display", serif; font-size: 1.15rem;
-  color: var(--espresso); margin-bottom: 6px; line-height: 1.2;
-}
-.bebida-desc {
-  font-size: 0.84rem; font-weight: 300; color: var(--warm-grey);
-  line-height: 1.55; margin-bottom: var(--sp-2); flex: 1;
-}
-/* Bebida price — consistent visible */
-.bebida-price {
-  font-family: "Syne", sans-serif; font-size: 0.95rem; font-weight: 700;
-  letter-spacing: 0.02em; color: var(--espresso);
-}
-/* Bebida add-btn variant */
-.bebidas-section .add-btn { border-color: var(--espresso); color: var(--ivory); }
-.bebidas-section .add-btn:hover { background: var(--gold); color: var(--espresso); border-color: var(--gold); }
-.bebidas-section .qty-btn { color: var(--bronze); }
-.bebidas-section .qty-btn:hover { background: var(--gold); color: var(--espresso); }
-.bebidas-section .qty-num { color: var(--espresso); }
+.bebidas-grid .menu-item { background: var(--ivory); }
+.bebidas-grid .menu-item:hover { background: var(--cream); }
 
 /* ── PROMO BAND → moved out of main flow, now footer CTA ── */
 .promo-band {
@@ -1919,8 +1930,7 @@ footer { background: var(--espresso); padding: var(--sp-6) var(--page-pad) var(-
 @media (max-width: 1100px) {
   .menu-grid { grid-template-columns: repeat(2,1fr); }
   .menu-item.featured { grid-column: span 2; }
-  .bebidas-list { grid-template-columns: repeat(2,1fr); }
-  .bebidas-list .bebida-featured { grid-column: span 2; }
+  .bebidas-grid { grid-template-columns: repeat(2,1fr); }
 }
 @media (max-width: 900px) {
   nav { padding: 0 24px; }
@@ -1960,7 +1970,7 @@ footer { background: var(--espresso); padding: var(--sp-6) var(--page-pad) var(-
   .menu-item.featured { grid-column: span 1; grid-template-columns: 1fr; }
   .menu-item.featured .item-photo { min-height: 200px; aspect-ratio: 16/9; height: auto; }
   .promo-band { grid-template-columns: 1fr; gap: var(--sp-4); }
-  .bebidas-list { grid-template-columns: 1fr; }
+  .bebidas-grid { grid-template-columns: 1fr; }
   .footer-top { grid-template-columns: 1fr 1fr; gap: var(--sp-4); }
   .cat-header { flex-direction: column; align-items: flex-start; gap: var(--sp-2); }
   .cat-desc { text-align: left; max-width: 100%; }

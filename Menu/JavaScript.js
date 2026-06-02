@@ -4,16 +4,25 @@ window.addEventListener("scroll", () => {
   nav.classList.toggle("scrolled", window.scrollY > 60);
 });
 
-// ===== FILTER =====
+// ===== FILTER — Platillos =====
 let filterBtns = document.querySelectorAll(".filter-btn");
-let catHeaders = document.querySelectorAll(".cat-header");
-let menuGrids = document.querySelectorAll(".menu-grid");
+let catHeaders = document.querySelectorAll(".cat-header:not(.bebidas-subheader)");
+let menuGrids = document.querySelectorAll(".menu-grid:not(.bebidas-grid)");
 const bebidasSection = document.querySelector(".bebidas-section");
+const bebidasFilterBar = document.getElementById("bebidasFilterBar");
+const bebidasGrids = document.getElementById("bebidasGrids");
+
+function setBebidasVisible(show) {
+  const val = show ? "" : "none";
+  if (bebidasSection) bebidasSection.style.display = val;
+  if (bebidasFilterBar) bebidasFilterBar.style.display = val;
+  if (bebidasGrids) bebidasGrids.style.display = val;
+}
 
 function syncVisibleCategorySections() {
   menuGrids.forEach((grid) => {
     const hasVisibleItems = Array.from(grid.querySelectorAll(".menu-item")).some((item) => item.style.display !== "none");
-    const header = document.querySelector(`.cat-header[data-cat="${grid.dataset.cat}"]`);
+    const header = document.querySelector(`.cat-header:not(.bebidas-subheader)[data-cat="${grid.dataset.cat}"]`);
     grid.style.display = hasVisibleItems ? "" : "none";
     if (header) header.style.display = hasVisibleItems ? "" : "none";
   });
@@ -26,8 +35,8 @@ function applyMenuFilter(btn) {
 
   catHeaders.forEach((h) => (h.style.display = ""));
   menuGrids.forEach((g) => (g.style.display = ""));
-  bebidasSection.style.display = "";
-  document.querySelectorAll(".menu-item").forEach((i) => (i.style.display = ""));
+  setBebidasVisible(true);
+  document.querySelectorAll("#menuBody .menu-item").forEach((i) => (i.style.display = ""));
 
   if (f === "all") return;
 
@@ -38,15 +47,12 @@ function applyMenuFilter(btn) {
     return;
   }
 
-  bebidasSection.style.display = "none";
-
   if (f === "vegano") {
     catHeaders.forEach((h) => (h.style.display = ""));
     menuGrids.forEach((g) => (g.style.display = ""));
-    document.querySelectorAll(".menu-item").forEach((item) => {
+    document.querySelectorAll("#menuBody .menu-item").forEach((item) => {
       item.style.display = item.querySelector(".item-tag.vg") ? "" : "none";
     });
-    bebidasSection.style.display = "none";
     syncVisibleCategorySections();
     return;
   }
@@ -54,16 +60,29 @@ function applyMenuFilter(btn) {
   catHeaders.forEach((h) => (h.style.display = h.dataset.cat === f ? "" : "none"));
   menuGrids.forEach((g) => (g.style.display = g.dataset.cat === f ? "" : "none"));
   setTimeout(() => {
-    const first = document.querySelector(`.cat-header[data-cat="${f}"]`);
+    const first = document.querySelector(`.cat-header:not(.bebidas-subheader)[data-cat="${f}"]`);
     if (first) first.scrollIntoView({ behavior: "smooth", block: "start" });
   }, 50);
 }
 
 filterBtns.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    applyMenuFilter(btn);
-  });
+  btn.addEventListener("click", () => applyMenuFilter(btn));
 });
+
+// ===== FILTER — Bebidas =====
+function applyDrinkFilter(btn) {
+  document.querySelectorAll(".bebidas-filter-btn").forEach((b) => b.classList.remove("active"));
+  btn.classList.add("active");
+  const f = btn.dataset.drinkFilter;
+  document.querySelectorAll(".bebidas-grid").forEach((grid) => {
+    grid.style.display = (f === "todas" || grid.dataset.drinkCat === f) ? "" : "none";
+  });
+}
+
+document.querySelectorAll(".bebidas-filter-btn").forEach((btn) => {
+  btn.addEventListener("click", () => applyDrinkFilter(btn));
+});
+
 
 // ===== ADMIN MENU =====
 const CUSTOM_DISHES_KEY = "labocata_custom_dishes";
@@ -194,12 +213,12 @@ function setupDynamicMenuCatalogs() {
     filterInner.insertBefore(button, dietary);
   });
   filterBtns = document.querySelectorAll(".filter-btn");
-  catHeaders = document.querySelectorAll(".cat-header");
-  menuGrids = document.querySelectorAll(".menu-grid");
+  catHeaders = document.querySelectorAll(".cat-header:not(.bebidas-subheader)");
+  menuGrids = document.querySelectorAll(".menu-grid:not(.bebidas-grid)");
 }
 
 function getCategoryGrid(category) {
-  if (category === "bebidas") return document.querySelector(".bebidas-list");
+  if (category === "bebidas") return document.querySelector(".bebidas-grid[data-drink-cat='caliente']");
   return document.querySelector(`.menu-grid[data-cat="${category}"]`);
 }
 
@@ -224,7 +243,7 @@ function renderTagSpans(tags = [], customTags = []) {
 
 function getDishRenderStyle(dish) {
   if (dish.style && dish.style !== "auto") return dish.style;
-  if (dish.category === "bebidas") return dish.featured ? "drink-featured" : "drink";
+  if (dish.category === "bebidas") return dish.featured && dish.image ? "featured" : dish.image ? "photo" : "text";
   if (dish.featured && dish.image) return "featured";
   if (dish.image) return "photo";
   return "text";
@@ -268,32 +287,12 @@ function renderCustomDish(dish) {
   const card = document.createElement("div");
   const hasImage = Boolean(dish.image);
   const style = getDishRenderStyle(dish);
-  const isDrink = style === "drink" || style === "drink-featured";
-  const isFeatured = style === "featured" || style === "drink-featured";
+  const isFeatured = style === "featured";
   const usePhoto = hasImage && style !== "text";
-  card.className = isDrink
-    ? `bebida-item admin-added${isFeatured && usePhoto ? " bebida-featured" : ""}${usePhoto ? "" : " no-photo"}`
-    : `menu-item admin-added${isFeatured && usePhoto ? " featured" : usePhoto ? " has-photo" : " text-card"}`;
+  card.className = `menu-item admin-added${isFeatured && usePhoto ? " featured" : usePhoto ? " has-photo" : " text-card"}`;
   card.dataset.cat = dish.category;
 
-  if (isDrink) {
-    card.innerHTML = `
-      ${hasImage ? `<div class="bebida-photo"><img src="${escapeHtml(dish.image)}" alt="${escapeHtml(dish.name)}" loading="lazy" /></div>` : ""}
-      <div class="bebida-body">
-        <span class="bebida-num">Admin</span>
-        <div class="bebida-name">${escapeHtml(dish.name)}</div>
-        <p class="bebida-desc">${escapeHtml(dish.description)}</p>
-        <div class="item-footer">
-          <span class="bebida-price">$${Number(dish.price).toLocaleString("es-MX")}</span>
-          <div class="qty-ctrl" id="${qtyId}"></div>
-          <button class="add-btn" type="button">
-            <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-            Agregar
-          </button>
-        </div>
-      </div>
-    `;
-  } else if (isFeatured && usePhoto) {
+  if (isFeatured && usePhoto) {
     card.innerHTML = `
       <div class="item-photo"><img src="${escapeHtml(dish.image)}" alt="${escapeHtml(dish.name)}" loading="lazy" /></div>
       <div class="item-body">
@@ -988,7 +987,7 @@ function prepareCardAnimation(el) {
   cardObs.observe(el);
 }
 
-document.querySelectorAll(".menu-item, .bebida-item").forEach(prepareCardAnimation);
+document.querySelectorAll(".menu-item").forEach(prepareCardAnimation);
 
 // Version segura para nombres agregados desde admin.
 function renderInlineQty(el, name, price, addBtn) {
