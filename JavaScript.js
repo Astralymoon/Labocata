@@ -74,22 +74,22 @@ sucursalItems.forEach((item) => {
 });
 
 // ——— TESTIMONIALS CAROUSEL ———
+// ——— TESTIMONIALS CAROUSEL ———
 const testiTrack = document.getElementById("testiTrack");
-const testiDotsWrap = document.querySelector(".testi-dots");
-const cards = Array.from(document.querySelectorAll(".testi-track > .testimonial-card"));
+const testiDots = document.querySelectorAll(".testi-dot");
 let testiCurrent = 0;
+const testiTotal = document.querySelectorAll(".testi-track > .testimonial-card").length;
 let testiPaused = false;
 
 function goToSlide(idx) {
-  testiCurrent = ((idx % cards.length) + cards.length) % cards.length;
+  testiCurrent = (idx + testiTotal) % testiTotal;
   testiTrack.style.transform = `translateX(-${testiCurrent * 100}%)`;
-  testiDotsWrap.querySelectorAll(".testi-dot")
-    .forEach((d, i) => d.classList.toggle("active", i === testiCurrent));
+  testiDots.forEach((d, i) => d.classList.toggle("active", i === testiCurrent));
 }
 
 document.getElementById("testiBtnNext").addEventListener("click", () => goToSlide(testiCurrent + 1));
 document.getElementById("testiBtnPrev").addEventListener("click", () => goToSlide(testiCurrent - 1));
-testiDotsWrap.querySelectorAll(".testi-dot").forEach((dot) => {
+testiDots.forEach((dot) => {
   dot.addEventListener("click", () => goToSlide(+dot.dataset.slide));
 });
 
@@ -100,14 +100,3 @@ testiSection.addEventListener("mouseleave", () => (testiPaused = false));
 setInterval(() => {
   if (!testiPaused) goToSlide(testiCurrent + 1);
 }, 10000);
-
-const reveals = document.querySelectorAll(".reveal");
-const observer = new IntersectionObserver(
-  (entries) => {
-    entries.forEach((e) => {
-      if (e.isIntersecting) e.target.classList.add("visible");
-    });
-  },
-  { threshold: 0.15 },
-);
-reveals.forEach((el) => observer.observe(el));
