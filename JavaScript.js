@@ -74,64 +74,157 @@ sucursalItems.forEach((item) => {
 });
 
 // ——— TESTIMONIALS CAROUSEL ———
-const testiTrack = document.getElementById("testiTrack");
-const testiDots = document.querySelectorAll(".testi-dot");
-let testiCurrent = 0;
-let testiPaused = false;
+(function () {
+  const MOBILE_BP = 900;
+  let testiCurrent = 0;
+  let testiPaused = false;
+  let testiTotal = 0;
+  let autoTimer = null;
 
-// En móvil (≤900px) los items son los 6 testi-item individuales.
-// En desktop los slides son los 2 testimonial-card.
-function isMobile() {
-  return window.innerWidth <= 900;
-}
+  // ── Elementos base (siempre existen en el HTML) ──
+  const wrap      = document.querySelector(".testi-carousel-wrap");
+  const track     = document.getElementById("testiTrack");
+  const dotsWrap  = document.querySelector(".testi-dots");
+  const btnPrev   = document.getElementById("testiBtnPrev");
+  const btnNext   = document.getElementById("testiBtnNext");
+  const section   = document.querySelector(".testimonials");
 
-function getSlides() {
-  return isMobile()
-    ? Array.from(document.querySelectorAll(".testi-item"))
-    : Array.from(document.querySelectorAll(".testi-track > .testimonial-card"));
-}
+  // ── Recolectar los 6 testi-item originales ANTES de tocar el DOM ──
+  const allItems = Array.from(document.querySelectorAll(".testi-item"));
 
-function goToSlide(idx) {
-  const slides = getSlides();
-  const total = slides.length;
-  testiCurrent = (idx + total) % total;
+  // ─────────────────────────────────────────────
+  //  MOBILE: reconstruye el track como 6 slides
+  // ─────────────────────────────────────────────
+  function buildMobile() {
+    // Vaciar track y poner los 6 items directo, cada uno como slide
+    track.innerHTML = "";
+    track.style.transition = "transform 0.55s cubic-bezier(0.76, 0, 0.24, 1)";
+    track.style.display    = "flex";
+    track.style.width      = "100%";
 
-  if (isMobile()) {
-    // scroll-snap: desplazamos el contenedor
-    const wrap = document.querySelector(".testi-carousel-wrap");
-    const itemW = slides[0].offsetWidth + 12; // width + margin-right
-    wrap.scrollTo({ left: testiCurrent * itemW, behavior: "smooth" });
-  } else {
-    // desktop: translateX por slides de 100%
-    // Los dots solo van de 0-1 en desktop (2 slides)
-    const slideIdx = testiCurrent % 2;
-    testiTrack.style.transform = `translateX(-${slideIdx * 100}%)`;
+    allItems.forEach((item) => {
+      // Wrapper individual de slide
+      const slide = document.createElement("div");
+      slide.className = "testi-slide-mobile";
+      slide.style.cssText = [
+        "min-width:100%",
+        "box-sizing:border-box",
+        "padding:0 20px 20px",
+      ].join(";");
+      slide.appendChild(item.cloneNode(true));
+      track.appendChild(slide);
+    });
+
+    testiTotal = allItems.length; // 6
+
+    // Dots: 6 puntos
+    dotsWrap.innerHTML = "";
+    for (let i = 0; i < testiTotal; i++) {
+      const d = document.createElement("button");
+      d.className  = "testi-dot" + (i === 0 ? " active" : "");
+      d.dataset.slide = i;
+      d.setAttribute("aria-label", `Review ${i + 1}`);
+      d.addEventListener("click", () => goTo(i));
+      dotsWrap.appendChild(d);
+    }
+
+    goTo(0);
   }
 
-  // Dots: en desktop son 2, en móvil son 6 — regenerar si cambia el modo
-  testiDots.forEach((d, i) => d.classList.toggle("active", i === testiCurrent));
-}
+  // ─────────────────────────────────────────────
+  //  DESKTOP: restaura los 2 testimonial-cards originales
+  // ─────────────────────────────────────────────
+  function buildDesktop() {
+    // Reconstruir los 2 grupos originales
+    track.innerHTML = "";
+    track.style.cssText = "";
 
-document
-  .getElementById("testiBtnNext")
-  .addEventListener("click", () => goToSlide(testiCurrent + 1));
-document
-  .getElementById("testiBtnPrev")
-  .addEventListener("click", () => goToSlide(testiCurrent - 1));
-testiDots.forEach((dot) => {
-  dot.addEventListener("click", () => goToSlide(+dot.dataset.slide));
-});
+    const g1 = document.createElement("div");
+    g1.className = "testimonial-card";
+    const g2 = document.createElement("div");
+    g2.className = "testimonial-card";
 
-// Pause on hover / touch
-const testiSection = document.querySelector(".testimonials");
-testiSection.addEventListener("mouseenter", () => (testiPaused = true));
-testiSection.addEventListener("mouseleave", () => (testiPaused = false));
-testiSection.addEventListener("touchstart", () => (testiPaused = true), { passive: true });
+    allItems.forEach((item, i) => {
+      (i < 3 ? g1 : g2).appendChild(item.cloneNode(true));
+    });
+    track.appendChild(g1);
+    track.appendChild(g2);
 
-// Auto-advance every 10s
-setInterval(() => {
-  if (!testiPaused) goToSlide(testiCurrent + 1);
-}, 10000);
+    testiTotal = 2;
+
+    // Dots: 2 puntos
+    dotsWrap.innerHTML = "";
+    for (let i = 0; i < testiTotal; i++) {
+      const d = document.createElement("button");
+      d.className = "testi-dot" + (i === 0 ? " active" : "");
+      d.dataset.slide = i;
+      d.setAttribute("aria-label", `Página ${i + 1}`);
+      d.addEventListener("click", () => goTo(i));
+      dotsWrap.appendChild(d);
+    }
+
+    goTo(0);
+  }
+
+  // ─────────────────────────────────────────────
+  //  Navegar a un slide (funciona igual en ambos modos)
+  // ─────────────────────────────────────────────
+  function goTo(idx) {
+    testiCurrent = ((idx % testiTotal) + testiTotal) % testiTotal;
+    track.style.transform = `translateX(-${testiCurrent * 100}%)`;
+    document
+      .querySelectorAll(".testi-dot")
+      .forEach((d, i) => d.classList.toggle("active", i === testiCurrent));
+  }
+
+  // ─────────────────────────────────────────────
+  //  Arrancar según tamaño actual
+  // ─────────────────────────────────────────────
+  function init() {
+    if (window.innerWidth <= MOBILE_BP) {
+      buildMobile();
+    } else {
+      buildDesktop();
+    }
+    startAuto();
+  }
+
+  // ─────────────────────────────────────────────
+  //  Botones ← →
+  // ─────────────────────────────────────────────
+  btnPrev.addEventListener("click", () => goTo(testiCurrent - 1));
+  btnNext.addEventListener("click", () => goTo(testiCurrent + 1));
+
+  // ─────────────────────────────────────────────
+  //  Auto-avance cada 8 s
+  // ─────────────────────────────────────────────
+  function startAuto() {
+    clearInterval(autoTimer);
+    autoTimer = setInterval(() => {
+      if (!testiPaused) goTo(testiCurrent + 1);
+    }, 8000);
+  }
+
+  section.addEventListener("mouseenter",  () => (testiPaused = true));
+  section.addEventListener("mouseleave",  () => (testiPaused = false));
+  section.addEventListener("touchstart",  () => (testiPaused = true),  { passive: true });
+  section.addEventListener("touchend",    () => (testiPaused = false), { passive: true });
+
+  // ─────────────────────────────────────────────
+  //  Resize: reconstruir si cruza el breakpoint
+  // ─────────────────────────────────────────────
+  let lastMode = window.innerWidth <= MOBILE_BP ? "mobile" : "desktop";
+  window.addEventListener("resize", () => {
+    const mode = window.innerWidth <= MOBILE_BP ? "mobile" : "desktop";
+    if (mode !== lastMode) {
+      lastMode = mode;
+      testiCurrent = 0;
+      init();
+    }
+  });
+
+  init();
+})();
 
 const reveals = document.querySelectorAll(".reveal");
 const observer = new IntersectionObserver(

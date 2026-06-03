@@ -2587,60 +2587,55 @@ footer {
   }
 
   /* ── Reviews: carrusel que muestra 1 card por slide ── */
+  /* ── Reviews ── */
   .testimonials {
-    padding: 80px 0 60px;
+    padding: 72px 0 60px;
   }
   .testimonials-inner {
-    padding: 0 20px;
+    padding: 0 24px;
   }
-  /*
-   * Cada .testimonial-card tiene 3 testi-items.
-   * En móvil convertimos cada item en un slide independiente:
-   * hacemos que el track muestre items de a uno apilándolos
-   * como columna dentro de cada card visible.
-   * La solución más limpia sin JS: mostrar 1 sola card completa
-   * apilada verticalmente (scroll interno no, sino 1 item visible).
-   * Usamos: card = flex-col, 1 item a la vez con scroll-snap.
-   */
+  /* El wrap NO hace overflow hidden en móvil — el JS usa translateX */
   .testi-carousel-wrap {
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+    overflow: hidden;
   }
-  .testi-carousel-wrap::-webkit-scrollbar {
-    display: none;
-  }
+  /* El track es flex de slides de 100% — el JS lo maneja */
   .testi-track {
     display: flex;
-    width: max-content;
-    transition: none; /* JS transform ya no funciona igual, usamos scroll */
+    width: 100%;
   }
-  /* Cada testi-item se convierte en un slide de ancho 100vw */
-  .testi-item {
-    min-width: calc(100vw - 40px);
-    max-width: calc(100vw - 40px);
-    scroll-snap-align: start;
-    margin-right: 12px;
-    flex-shrink: 0;
+  /* Cada slide mobile ocupa el ancho completo */
+  .testi-slide-mobile {
+    min-width: 100%;
+    box-sizing: border-box;
+    padding: 0 20px 4px;
   }
-  /* Ocultar la card wrapper (era grid 1fr 1fr 1fr) */
-  .testimonial-card {
-    display: contents; /* los items flotan directo al flex del track */
+  /* La tarjeta dentro del slide: estilo limpio y táctil */
+  .testi-slide-mobile .testi-item {
+    padding: 32px 28px 28px;
+    border-radius: 2px;
   }
   .testi-controls {
-    margin-top: 32px;
+    margin-top: 28px;
+  }
+  /* Dots más grandes para touch */
+  .testi-dot {
+    width: 8px;
+    height: 8px;
+  }
+  .testi-dot.active {
+    width: 28px;
   }
   .testi-rating-bar {
     flex-wrap: wrap;
-    gap: 20px;
+    justify-content: center;
+    gap: 20px 32px;
     padding: 40px 24px 0;
   }
   .testi-divider {
     display: none;
   }
   .press-logos {
-    gap: 28px;
+    gap: 24px;
     padding: 40px 24px 0;
   }
 
