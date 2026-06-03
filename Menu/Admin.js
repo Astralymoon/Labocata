@@ -249,12 +249,14 @@ function getFormDish(useFallbacks = true) {
   const style = String(data.get("style") || "auto");
   const name = String(data.get("name") || "").trim();
   const description = String(data.get("description") || "").trim();
+  const category = String(data.get("category") || "clasicos");
   return {
     id: String(data.get("editingDishId") || ""),
     name: name || (useFallbacks ? "Nombre del platillo" : ""),
     price: Number(data.get("price")) || 0,
     description: description || (useFallbacks ? "Descripcion del platillo con ingredientes principales." : ""),
-    category: style.startsWith("drink") ? "bebidas" : String(data.get("category") || "clasicos"),
+    category,
+    drinkSubcat: category === "bebidas" ? String(data.get("drinkSubcat") || "caliente") : "",
     style,
     image: String(data.get("image") || "").trim(),
     tags: getSelectedOptions(document.getElementById("adminTags")),
@@ -265,7 +267,6 @@ function getFormDish(useFallbacks = true) {
 
 function getDishRenderStyle(dish) {
   if (dish.style && dish.style !== "auto") return dish.style;
-  if (dish.category === "bebidas") return dish.featured ? "drink-featured" : "drink";
   if (dish.featured && dish.image) return "featured";
   if (dish.image) return "photo";
   return "text";
@@ -290,27 +291,9 @@ function renderPreviewCard(dish) {
   const style = getDishRenderStyle(dish);
   const hasImage = Boolean(dish.image);
   const usePhoto = hasImage && style !== "text";
-  const isDrink = style === "drink" || style === "drink-featured";
-  const isFeatured = style === "featured" || style === "drink-featured";
+  const isFeatured = style === "featured";
   const tags = renderTagSpans(dish);
-  const img = usePhoto ? `<div class="${isDrink ? "bebida-photo" : "item-photo"}"><img src="${escapeHtml(dish.image)}" alt="${escapeHtml(dish.name)}" /></div>` : "";
-
-  if (isDrink) {
-    return `
-      <div class="bebida-item admin-preview-item${isFeatured && usePhoto ? " bebida-featured" : ""}${usePhoto ? "" : " no-photo"}">
-        ${img}
-        <div class="bebida-body">
-          <span class="bebida-num">Preview</span>
-          <div class="bebida-name">${escapeHtml(dish.name)}</div>
-          <p class="bebida-desc">${escapeHtml(dish.description)}</p>
-          <div class="item-footer">
-            <span class="bebida-price">$${Number(dish.price).toLocaleString("es-MX")}</span>
-            <button class="add-btn" type="button">Agregar</button>
-          </div>
-        </div>
-      </div>
-    `;
-  }
+  const img = usePhoto ? `<div class="item-photo"><img src="${escapeHtml(dish.image)}" alt="${escapeHtml(dish.name)}" /></div>` : "";
 
   if (isFeatured && usePhoto) {
     return `
@@ -378,6 +361,7 @@ function setFormMode(dish = null) {
     document.getElementById("adminPrice").value = dish.price || "";
     document.getElementById("adminCategory").value = dish.category || "clasicos";
     document.getElementById("adminStyle").value = dish.style || "auto";
+    document.getElementById("adminDrinkSubcat").value = dish.drinkSubcat || "caliente";
     document.getElementById("adminDescription").value = dish.description || "";
     document.getElementById("adminImage").value = dish.image || "";
     document.getElementById("adminCustomTags").value = (dish.customTags || []).join(", ");
@@ -571,7 +555,12 @@ function setupDishForm() {
   const form = document.getElementById("adminDishForm");
 
   form.addEventListener("input", renderPreview);
-  form.addEventListener("change", renderPreview);
+  form.addEventListener("change", (e) => {
+    renderPreview();
+    const cat = document.getElementById("adminCategory").value;
+    const field = document.getElementById("drinkSubcatField");
+    if (field) field.hidden = cat !== "bebidas";
+  });
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -581,7 +570,7 @@ function setupDishForm() {
       return;
     }
 
-    if (["photo", "featured", "drink-featured"].includes(dish.style) && !dish.image) {
+    if (["photo", "featured"].includes(dish.style) && !dish.image) {
       setStatus("Ese estilo necesita una URL de imagen.");
       return;
     }

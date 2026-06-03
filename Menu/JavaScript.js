@@ -217,8 +217,12 @@ function setupDynamicMenuCatalogs() {
   menuGrids = document.querySelectorAll(".menu-grid:not(.bebidas-grid)");
 }
 
-function getCategoryGrid(category) {
-  if (category === "bebidas") return document.querySelector(".bebidas-grid[data-drink-cat='caliente']");
+function getCategoryGrid(dish) {
+  const category = typeof dish === "string" ? dish : dish.category;
+  if (category === "bebidas") {
+    const sub = (typeof dish === "object" && dish.drinkSubcat) ? dish.drinkSubcat : "caliente";
+    return document.querySelector(`.bebidas-grid[data-drink-cat="${sub}"]`);
+  }
   return document.querySelector(`.menu-grid[data-cat="${category}"]`);
 }
 
@@ -243,7 +247,6 @@ function renderTagSpans(tags = [], customTags = []) {
 
 function getDishRenderStyle(dish) {
   if (dish.style && dish.style !== "auto") return dish.style;
-  if (dish.category === "bebidas") return dish.featured && dish.image ? "featured" : dish.image ? "photo" : "text";
   if (dish.featured && dish.image) return "featured";
   if (dish.image) return "photo";
   return "text";
@@ -280,7 +283,7 @@ function wireOrderButton(card, dish, qtyId) {
 }
 
 function renderCustomDish(dish) {
-  const grid = getCategoryGrid(dish.category);
+  const grid = getCategoryGrid(dish);
   if (!grid) return;
 
   const qtyId = `qty-admin-${dish.id}`;
@@ -291,6 +294,7 @@ function renderCustomDish(dish) {
   const usePhoto = hasImage && style !== "text";
   card.className = `menu-item admin-added${isFeatured && usePhoto ? " featured" : usePhoto ? " has-photo" : " text-card"}`;
   card.dataset.cat = dish.category;
+  if (dish.category === "bebidas" && dish.drinkSubcat) card.dataset.drink = dish.drinkSubcat;
 
   if (isFeatured && usePhoto) {
     card.innerHTML = `

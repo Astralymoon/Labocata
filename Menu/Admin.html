@@ -72,10 +72,17 @@
                 <option value="text">Tarjeta de texto</option>
                 <option value="photo">Tarjeta con foto</option>
                 <option value="featured">Destacado ancho</option>
-                <option value="drink">Bebida normal</option>
-                <option value="drink-featured">Bebida destacada</option>
               </select>
-              <small class="admin-field-hint">Usa los mismos estilos del menu: texto, foto, destacado y variantes de bebidas.</small>
+              <small class="admin-field-hint">Texto, foto o destacado — igual para platillos y bebidas.</small>
+            </div>
+            <div class="admin-field wide" id="drinkSubcatField" hidden>
+              <label for="adminDrinkSubcat">Tipo de bebida</label>
+              <select id="adminDrinkSubcat" name="drinkSubcat">
+                <option value="caliente">Caliente (cafe, matcha, chocolate...)</option>
+                <option value="fria">Fria (cold brew, aguas, cocteles...)</option>
+                <option value="jugo">Jugos &amp; Licuados</option>
+              </select>
+              <small class="admin-field-hint">Define en que seccion aparece la bebida.</small>
             </div>
             <div class="admin-field wide">
               <label for="adminDescription">Descripcion</label>
