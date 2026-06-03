@@ -2382,22 +2382,38 @@ footer {
   .hero-content {
     padding: 0 24px 60px;
   }
+  /* ── Nuestra Historia ── */
   .intro {
     grid-template-columns: 1fr;
     min-height: auto;
   }
   .intro-visual {
-    height: 70vw;
-    min-height: 260px;
-    max-height: 420px;
+    height: 100vw;
+    min-height: 300px;
+    max-height: 520px;
+  }
+  .intro-slide-content {
+    display: none;
   }
   .intro-text {
-    padding: 56px 28px 64px;
+    padding: 52px 24px 60px;
+  }
+  .intro-heading {
+    font-size: clamp(2rem, 7vw, 2.8rem);
+  }
+  .intro-body {
+    font-size: 1.05rem;
   }
   .intro-stat {
-    gap: 24px;
-    flex-wrap: wrap;
+    gap: 0;
+    justify-content: space-between;
+    flex-wrap: nowrap;
   }
+  .stat-num {
+    font-size: 2rem;
+  }
+
+  /* ── Galería atmósfera ── */
   .menu-section {
     padding: 80px 24px;
   }
@@ -2405,11 +2421,20 @@ footer {
     grid-template-columns: 1fr;
   }
   .atmosphere {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
     height: auto;
+    gap: 3px;
   }
   .atm-panel {
-    height: 50vw;
+    height: 72vw;
+    min-height: 260px;
+    max-height: 400px;
+    flex-shrink: 0;
+  }
+  .atm-desc {
+    opacity: 1;
+    transform: translateY(0);
   }
   .philosophy {
     grid-template-columns: 1fr;
