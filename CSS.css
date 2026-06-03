@@ -2430,6 +2430,35 @@ footer {
     gap: 20px;
   }
 
+  /* ── HERO ── */
+  .hero-content {
+    padding: 0 24px 52px;
+    max-width: 100%;
+  }
+  .hero-title {
+    font-size: clamp(3.2rem, 13vw, 5rem);
+    line-height: 0.95;
+    margin-bottom: 20px;
+  }
+  .hero-sub {
+    font-size: 1.1rem;
+    margin-bottom: 36px;
+    max-width: 100%;
+  }
+  .hero-actions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .btn-primary {
+    width: 100%;
+    text-align: center;
+    padding: 18px 24px;
+  }
+  .hero-scroll {
+    display: none;
+  }
+
   /* ── Nuestra Historia: texto arriba, imagen abajo ── */
   .intro {
     grid-template-columns: 1fr;
@@ -2437,20 +2466,28 @@ footer {
     display: flex;
     flex-direction: column;
   }
-  /* Empuja la imagen al final */
   .intro-visual {
     order: 2;
     height: 88vw;
     min-height: 280px;
     max-height: 480px;
   }
+  /* Mantener el slide content (barra, título, link) visible en móvil */
+  .intro-slide-content {
+    display: block;
+    left: 20px;
+    bottom: 20px;
+    width: calc(100% - 40px);
+  }
+  .intro-slider-title {
+    font-size: 13px;
+  }
+  .intro-slider-link {
+    font-size: 13px;
+  }
   .intro-text {
     order: 1;
     padding: 52px 24px 48px;
-  }
-  /* Oculta el overlay de texto del slider en móvil */
-  .intro-slide-content {
-    display: none;
   }
   .intro-heading {
     font-size: clamp(2rem, 7vw, 2.8rem);
@@ -2467,10 +2504,33 @@ footer {
     font-size: 2rem;
   }
 
-  /* ── Carta del día: cards con altura propia, imagen visible ── */
+  /* ── Carta del día ── */
   .menu-section {
     padding: 80px 24px;
   }
+  /* "Ver menú completo" — más visible en móvil */
+  .menu-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 24px;
+    margin-bottom: 48px;
+  }
+  .menu-link {
+    font-size: 0.72rem;
+    color: var(--ivory);
+    background: var(--bronze);
+    padding: 14px 24px;
+    letter-spacing: 0.18em;
+  }
+  .menu-link::after {
+    content: "→";
+  }
+  .menu-link:hover {
+    gap: 12px;
+    background: var(--gold);
+    color: var(--espresso);
+  }
+  /* Grid → columna, imágenes visibles */
   .menu-grid {
     display: flex;
     flex-direction: column;
@@ -2483,7 +2543,6 @@ footer {
   .menu-card.featured {
     grid-row: unset;
   }
-  /* Imagen con altura fija para que siempre se vea */
   .menu-card-img {
     height: 56vw;
     min-height: 200px;
@@ -2504,7 +2563,6 @@ footer {
     max-height: 400px;
     flex-shrink: 0;
   }
-  /* Mostrar descripción siempre (sin hover) */
   .atm-desc {
     opacity: 1;
     transform: translateY(0);
@@ -2528,23 +2586,50 @@ footer {
     padding: 60px 28px;
   }
 
-  /* ── Reviews / Testimonios ── */
+  /* ── Reviews: carrusel que muestra 1 card por slide ── */
   .testimonials {
     padding: 80px 0 60px;
   }
   .testimonials-inner {
     padding: 0 20px;
   }
-  /* Una sola card por slide */
-  .testimonial-card {
-    grid-template-columns: 1fr;
-    padding: 0 20px 20px;
-    gap: 20px;
+  /*
+   * Cada .testimonial-card tiene 3 testi-items.
+   * En móvil convertimos cada item en un slide independiente:
+   * hacemos que el track muestre items de a uno apilándolos
+   * como columna dentro de cada card visible.
+   * La solución más limpia sin JS: mostrar 1 sola card completa
+   * apilada verticalmente (scroll interno no, sino 1 item visible).
+   * Usamos: card = flex-col, 1 item a la vez con scroll-snap.
+   */
+  .testi-carousel-wrap {
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
   }
-  /* Ocultar 2da y 3ra card — mostrar solo la primera */
-  .testimonial-card .testi-item:nth-child(2),
-  .testimonial-card .testi-item:nth-child(3) {
+  .testi-carousel-wrap::-webkit-scrollbar {
     display: none;
+  }
+  .testi-track {
+    display: flex;
+    width: max-content;
+    transition: none; /* JS transform ya no funciona igual, usamos scroll */
+  }
+  /* Cada testi-item se convierte en un slide de ancho 100vw */
+  .testi-item {
+    min-width: calc(100vw - 40px);
+    max-width: calc(100vw - 40px);
+    scroll-snap-align: start;
+    margin-right: 12px;
+    flex-shrink: 0;
+  }
+  /* Ocultar la card wrapper (era grid 1fr 1fr 1fr) */
+  .testimonial-card {
+    display: contents; /* los items flotan directo al flex del track */
+  }
+  .testi-controls {
+    margin-top: 32px;
   }
   .testi-rating-bar {
     flex-wrap: wrap;
@@ -2567,7 +2652,6 @@ footer {
     grid-template-columns: 1fr;
     gap: 56px;
   }
-  /* Formulario ocupa ancho completo */
   .newsletter-form {
     width: 100%;
   }

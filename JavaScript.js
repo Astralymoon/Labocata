@@ -1,10 +1,10 @@
-﻿// Nav scroll
+// Nav scroll
 const nav = document.getElementById("nav");
 window.addEventListener("scroll", () => {
   nav.classList.toggle("scrolled", window.scrollY > 60);
 });
 
-// â€”â€”â€” FULLSCREEN MENU â€”â€”â€”
+// ——— FULLSCREEN MENU ———
 const burger = document.getElementById("navBurger");
 let menuOpen = false;
 
@@ -73,58 +73,43 @@ sucursalItems.forEach((item) => {
   });
 });
 
-// â€”â€”â€” TESTIMONIALS CAROUSEL â€”â€”â€”
+// ——— TESTIMONIALS CAROUSEL ———
 const testiTrack = document.getElementById("testiTrack");
-const testiCards = [...document.querySelectorAll(".testi-track > .testimonial-card")];
-const testiItems = testiCards.flatMap((card) => [
-  ...card.querySelectorAll(".testi-item"),
-]);
-const testiDotsWrap = document.querySelector(".testi-dots");
-const testiMobileQuery = window.matchMedia("(max-width: 768px)");
-let testiDots = [];
+const testiDots = document.querySelectorAll(".testi-dot");
 let testiCurrent = 0;
 let testiPaused = false;
 
-function getTestiTotal() {
-  return testiMobileQuery.matches ? testiItems.length : testiCards.length;
+// En móvil (≤900px) los items son los 6 testi-item individuales.
+// En desktop los slides son los 2 testimonial-card.
+function isMobile() {
+  return window.innerWidth <= 900;
 }
 
-function getTestiCardIndex() {
-  if (!testiMobileQuery.matches) return testiCurrent;
-  return testiCards.findIndex((card) => card.contains(testiItems[testiCurrent]));
-}
-
-function renderTestiDots() {
-  const total = getTestiTotal();
-  testiDotsWrap.innerHTML = Array.from(
-    { length: total },
-    (_, i) => `<button class="testi-dot" data-slide="${i}" aria-label="Reseña ${i + 1}"></button>`,
-  ).join("");
-  testiDots = [...testiDotsWrap.querySelectorAll(".testi-dot")];
-  testiDots.forEach((dot) => {
-    dot.addEventListener("click", () => goToSlide(+dot.dataset.slide));
-  });
-}
-
-function updateMobileTestiItem() {
-  testiItems.forEach((item) => item.classList.remove("is-mobile-active"));
-  if (testiMobileQuery.matches && testiItems[testiCurrent]) {
-    testiItems[testiCurrent].classList.add("is-mobile-active");
-  }
+function getSlides() {
+  return isMobile()
+    ? Array.from(document.querySelectorAll(".testi-item"))
+    : Array.from(document.querySelectorAll(".testi-track > .testimonial-card"));
 }
 
 function goToSlide(idx) {
-  const total = getTestiTotal();
+  const slides = getSlides();
+  const total = slides.length;
   testiCurrent = (idx + total) % total;
-  testiTrack.style.transform = `translateX(-${getTestiCardIndex() * 100}%)`;
-  updateMobileTestiItem();
-  testiDots.forEach((d, i) => d.classList.toggle("active", i === testiCurrent));
-}
 
-function resetTestiCarousel() {
-  testiCurrent = 0;
-  renderTestiDots();
-  goToSlide(0);
+  if (isMobile()) {
+    // scroll-snap: desplazamos el contenedor
+    const wrap = document.querySelector(".testi-carousel-wrap");
+    const itemW = slides[0].offsetWidth + 12; // width + margin-right
+    wrap.scrollTo({ left: testiCurrent * itemW, behavior: "smooth" });
+  } else {
+    // desktop: translateX por slides de 100%
+    // Los dots solo van de 0-1 en desktop (2 slides)
+    const slideIdx = testiCurrent % 2;
+    testiTrack.style.transform = `translateX(-${slideIdx * 100}%)`;
+  }
+
+  // Dots: en desktop son 2, en móvil son 6 — regenerar si cambia el modo
+  testiDots.forEach((d, i) => d.classList.toggle("active", i === testiCurrent));
 }
 
 document
@@ -133,12 +118,15 @@ document
 document
   .getElementById("testiBtnPrev")
   .addEventListener("click", () => goToSlide(testiCurrent - 1));
-testiMobileQuery.addEventListener("change", resetTestiCarousel);
-resetTestiCarousel();
-// Pause on hover
+testiDots.forEach((dot) => {
+  dot.addEventListener("click", () => goToSlide(+dot.dataset.slide));
+});
+
+// Pause on hover / touch
 const testiSection = document.querySelector(".testimonials");
 testiSection.addEventListener("mouseenter", () => (testiPaused = true));
 testiSection.addEventListener("mouseleave", () => (testiPaused = false));
+testiSection.addEventListener("touchstart", () => (testiPaused = true), { passive: true });
 
 // Auto-advance every 10s
 setInterval(() => {
@@ -155,4 +143,3 @@ const observer = new IntersectionObserver(
   { threshold: 0.15 },
 );
 reveals.forEach((el) => observer.observe(el));
-
