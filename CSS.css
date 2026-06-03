@@ -2382,84 +2382,7 @@ footer {
   .hero-content {
     padding: 0 24px 60px;
   }
-  /* ── Nuestra Historia ── */
-  .intro {
-    grid-template-columns: 1fr;
-    min-height: auto;
-  }
-  .intro-visual {
-    height: 100vw;
-    min-height: 300px;
-    max-height: 520px;
-  }
-  .intro-slide-content {
-    display: none;
-  }
-  .intro-text {
-    padding: 52px 24px 60px;
-  }
-  .intro-heading {
-    font-size: clamp(2rem, 7vw, 2.8rem);
-  }
-  .intro-body {
-    font-size: 1.05rem;
-  }
-  .intro-stat {
-    gap: 0;
-    justify-content: space-between;
-    flex-wrap: nowrap;
-  }
-  .stat-num {
-    font-size: 2rem;
-  }
 
-  /* ── Galería atmósfera ── */
-  .menu-section {
-    padding: 80px 24px;
-  }
-  .menu-grid {
-    grid-template-columns: 1fr;
-  }
-  .atmosphere {
-    display: flex;
-    flex-direction: column;
-    height: auto;
-    gap: 3px;
-  }
-  .atm-panel {
-    height: 72vw;
-    min-height: 260px;
-    max-height: 400px;
-    flex-shrink: 0;
-  }
-  .atm-desc {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  .philosophy {
-    grid-template-columns: 1fr;
-    padding: 80px 32px;
-    gap: 60px;
-  }
-  .philosophy-left {
-    position: static;
-  }
-  .hours-section {
-    grid-template-columns: 1fr;
-  }
-  .hours-content {
-    padding: 60px 32px;
-  }
-  .testimonials {
-    padding: 80px 24px;
-  }
-  .testimonials-track {
-    grid-template-columns: 1fr;
-  }
-  .newsletter {
-    grid-template-columns: 1fr;
-    padding: 80px 32px;
-  }
   footer {
     padding: 60px 24px 32px;
   }
@@ -2505,6 +2428,155 @@ footer {
     justify-content: flex-start;
     flex-direction: row;
     gap: 20px;
+  }
+
+  /* ── Nuestra Historia: texto arriba, imagen abajo ── */
+  .intro {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  /* Empuja la imagen al final */
+  .intro-visual {
+    order: 2;
+    height: 88vw;
+    min-height: 280px;
+    max-height: 480px;
+  }
+  .intro-text {
+    order: 1;
+    padding: 52px 24px 48px;
+  }
+  /* Oculta el overlay de texto del slider en móvil */
+  .intro-slide-content {
+    display: none;
+  }
+  .intro-heading {
+    font-size: clamp(2rem, 7vw, 2.8rem);
+  }
+  .intro-body {
+    font-size: 1.05rem;
+  }
+  .intro-stat {
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    gap: 0;
+  }
+  .stat-num {
+    font-size: 2rem;
+  }
+
+  /* ── Carta del día: cards con altura propia, imagen visible ── */
+  .menu-section {
+    padding: 80px 24px;
+  }
+  .menu-grid {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    gap: 3px;
+  }
+  .menu-card {
+    height: auto;
+  }
+  .menu-card.featured {
+    grid-row: unset;
+  }
+  /* Imagen con altura fija para que siempre se vea */
+  .menu-card-img {
+    height: 56vw;
+    min-height: 200px;
+    max-height: 320px;
+    flex: none;
+  }
+
+  /* ── Galería Atmósfera ── */
+  .atmosphere {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    gap: 3px;
+  }
+  .atm-panel {
+    height: 72vw;
+    min-height: 260px;
+    max-height: 400px;
+    flex-shrink: 0;
+  }
+  /* Mostrar descripción siempre (sin hover) */
+  .atm-desc {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ── Filosofía ── */
+  .philosophy {
+    grid-template-columns: 1fr;
+    padding: 80px 28px;
+    gap: 60px;
+  }
+  .philosophy-left {
+    position: static;
+  }
+
+  /* ── Horarios ── */
+  .hours-section {
+    grid-template-columns: 1fr;
+  }
+  .hours-content {
+    padding: 60px 28px;
+  }
+
+  /* ── Reviews / Testimonios ── */
+  .testimonials {
+    padding: 80px 0 60px;
+  }
+  .testimonials-inner {
+    padding: 0 20px;
+  }
+  /* Una sola card por slide */
+  .testimonial-card {
+    grid-template-columns: 1fr;
+    padding: 0 20px 20px;
+    gap: 20px;
+  }
+  /* Ocultar 2da y 3ra card — mostrar solo la primera */
+  .testimonial-card .testi-item:nth-child(2),
+  .testimonial-card .testi-item:nth-child(3) {
+    display: none;
+  }
+  .testi-rating-bar {
+    flex-wrap: wrap;
+    gap: 20px;
+    padding: 40px 24px 0;
+  }
+  .testi-divider {
+    display: none;
+  }
+  .press-logos {
+    gap: 28px;
+    padding: 40px 24px 0;
+  }
+
+  /* ── Contacto / Formulario ── */
+  .newsletter {
+    padding: 80px 24px;
+  }
+  .contact-grid {
+    grid-template-columns: 1fr;
+    gap: 56px;
+  }
+  /* Formulario ocupa ancho completo */
+  .newsletter-form {
+    width: 100%;
+  }
+  .newsletter-form button {
+    align-self: stretch;
+    text-align: center;
+  }
+  .contact-social-row {
+    flex-wrap: wrap;
   }
 }
 
