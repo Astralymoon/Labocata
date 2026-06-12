@@ -3,214 +3,338 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard | Labocata.</title>
+    <title>Admin Workspace | Labocata.</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Syne:wght@400;500;600;700;800&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="CSS.css">
     <style>
         :root {
             --color-gold: #c5a059;
             --color-bg: #f4f1ea;
+            --sidebar-width: 280px;
+            --editor-width: 450px;
         }
         body {
-            background-color: var(--color-bg);
+            background-color: #fff;
             font-family: 'Syne', sans-serif;
             margin: 0;
-            padding: 2rem;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
-        .admin-header {
+        .admin-nav {
+            background: #1a1a1a;
+            color: white;
+            padding: 0.75rem 1.5rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 2rem;
-            border-bottom: 2px solid var(--color-gold);
-            padding-bottom: 1rem;
+            z-index: 100;
         }
-        .admin-header h1 {
+        .admin-nav h1 {
             font-family: 'DM Serif Display', serif;
-            color: var(--color-gold);
+            font-size: 1.25rem;
             margin: 0;
+            color: var(--color-gold);
         }
-        .logout-btn {
-            background-color: #d9534f;
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 600;
+        .nav-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
         }
-        .admin-grid {
-            display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 2rem;
+        .workspace {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
         }
-        @media (max-width: 900px) {
-            .admin-grid {
-                grid-template-columns: 1fr;
-            }
+
+        /* PANE 1: CATALOG */
+        .pane-catalog {
+            width: var(--sidebar-width);
+            background: #f8f8f8;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
         }
-        .admin-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        }
-        .admin-card h2 {
-            margin-top: 0;
-            font-family: 'DM Serif Display', serif;
-            font-size: 1.5rem;
+        .pane-header {
+            padding: 1rem;
             border-bottom: 1px solid #eee;
-            padding-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .pane-header h2 {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 0;
+            color: #666;
+        }
+        .catalog-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.5rem;
+        }
+        .cat-group {
             margin-bottom: 1rem;
         }
-        .form-group {
+        .cat-item {
+            padding: 0.6rem 0.8rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+        }
+        .cat-item:hover { background: #eee; }
+        .cat-item.active { background: var(--color-gold); color: white; }
+        .product-item {
+            padding: 0.5rem 0.8rem 0.5rem 1.5rem;
+            font-size: 0.85rem;
+            cursor: pointer;
+            border-left: 2px solid transparent;
+        }
+        .product-item:hover { background: #f0f0f0; border-left-color: var(--color-gold); }
+        .product-item.active { background: #fff; border-left-color: var(--color-gold); font-weight: 600; }
+
+        /* PANE 2: EDITOR */
+        .pane-editor {
+            width: var(--editor-width);
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+        }
+        .editor-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+        .form-section {
+            margin-bottom: 2rem;
+        }
+        .form-section h3 {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.2rem;
             margin-bottom: 1rem;
+            color: #333;
         }
-        .form-group label {
-            display: block;
-            margin-bottom: 0.3rem;
-            font-weight: 500;
-        }
-        .form-group input, .form-group select, .form-group textarea {
+        .field { margin-bottom: 1.25rem; }
+        .field label { display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.4rem; color: #555; text-transform: uppercase; }
+        .field input, .field select, .field textarea {
             width: 100%;
-            padding: 0.6rem;
-            border: 1px solid #ddd;
+            padding: 0.75rem;
+            border: 1px solid #ccc;
             border-radius: 4px;
-            box-sizing: border-box;
+            font-family: inherit;
+            font-size: 0.95rem;
+        }
+        .field input:focus { border-color: var(--color-gold); outline: none; }
+
+        .variants-container {
+            background: #f9f9f9;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px dashed #ccc;
+        }
+        .variant-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .variant-row input { flex: 1; }
+        .btn-add-variant {
+            background: none;
+            border: 1px solid var(--color-gold);
+            color: var(--color-gold);
+            padding: 0.4rem;
+            width: 100%;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border-radius: 4px;
+        }
+
+        /* PANE 3: PREVIEW */
+        .pane-preview {
+            flex: 1;
+            background: #eee;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        .preview-toolbar {
+            padding: 0.5rem 1rem;
+            background: #fff;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .preview-frame-container {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+            display: flex;
+            justify-content: center;
+        }
+        .preview-frame {
+            width: 450px; /* Simulated Mobile View */
+            background: white;
+            min-height: 800px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            border-radius: 20px;
+            border: 8px solid #333;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
             font-family: inherit;
         }
-        .btn-submit {
-            background-color: var(--color-gold);
-            color: white;
-            border: none;
-            padding: 0.8rem 1.5rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 600;
-            width: 100%;
+        .btn-primary { background: var(--color-gold); color: white; }
+        .btn-danger { background: #ff4444; color: white; }
+        .btn-ghost { background: transparent; color: #666; border: 1px solid #ddd; }
+
+        /* Utils */
+        .status-badge {
+            padding: 0.2rem 0.5rem;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 800;
         }
-        .status-msg {
-            margin-top: 1rem;
-            padding: 0.5rem;
-            border-radius: 4px;
-            display: none;
-        }
-        .status-msg.success {
-            background-color: #dff0d8;
-            color: #3c763d;
-            display: block;
-        }
-        .status-msg.error {
-            background-color: #f2dede;
-            color: #a94442;
-            display: block;
-        }
-        .product-list {
-            list-style: none;
-            padding: 0;
-        }
-        .product-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.8rem;
-            border-bottom: 1px solid #eee;
-        }
-        .product-item:last-child {
-            border-bottom: none;
-        }
-        .product-actions button {
-            margin-left: 0.5rem;
-            cursor: pointer;
-            padding: 0.3rem 0.6rem;
-            border-radius: 4px;
-            border: 1px solid #ddd;
-        }
-        .btn-delete {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
+        .status-badge.featured { background: #fff3cd; color: #856404; }
     </style>
 </head>
 <body>
-    <header class="admin-header">
-        <h1>Admin Dashboard</h1>
-        <button class="logout-btn" onclick="window.auth.signOut()">Cerrar Sesión</button>
-    </header>
+    <nav class="admin-nav">
+        <h1>Labocata Admin Panel</h1>
+        <div class="nav-actions">
+            <span id="user-email">admin@labocata.mx</span>
+            <button class="btn btn-danger" onclick="window.auth.signOut()">Cerrar Sesión</button>
+        </div>
+    </nav>
 
-    <div class="admin-grid">
-        <!-- Add Product Form -->
-        <section class="admin-card">
-            <h2>Agregar / Editar Platillo</h2>
-            <form id="adminDishForm">
-                <input type="hidden" id="dishId">
-                <div class="form-group">
-                    <label for="name">Nombre</label>
-                    <input type="text" id="name" name="name" required>
+    <div class="workspace">
+        <!-- PANE 1: CATALOG -->
+        <aside class="pane-catalog">
+            <div class="pane-header">
+                <h2>Categorías</h2>
+                <button class="btn btn-ghost" style="padding: 0.2rem 0.5rem;" onclick="openCategoryModal()">+</button>
+            </div>
+            <div class="catalog-list" id="admin-catalog-list">
+                <!-- Loaded via JS -->
+            </div>
+        </aside>
+
+        <!-- PANE 2: EDITOR -->
+        <main class="pane-editor">
+            <div class="pane-header">
+                <h2 id="editor-title">Nuevo Platillo</h2>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-danger" id="delete-product-btn" style="display:none;" onclick="deleteProduct()">Borrar</button>
+                    <button class="btn btn-ghost" onclick="resetEditor()">Limpiar</button>
+                    <button class="btn btn-primary" id="save-product-btn">Guardar</button>
                 </div>
-                <div class="form-group">
-                    <label for="price">Precio ($)</label>
-                    <input type="number" id="price" name="price" required>
-                </div>
-                <div class="form-group">
-                    <label for="description">Descripción</label>
-                    <textarea id="description" name="description" rows="3" required></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="category">Categoría</label>
-                    <select id="category" name="category" required>
-                        <!-- Categories will be loaded dynamically -->
-                        <option value="clasicos">Clásicos</option>
-                        <option value="bocadillos">Bocadillos</option>
-                        <option value="dulce">Mesa Dulce</option>
-                        <option value="bebidas">Bebidas</option>
+            </div>
+            <div class="editor-content">
+                <form id="product-form">
+                    <input type="hidden" id="dishId">
+
+                    <div class="form-section">
+                        <h3>Información Básica</h3>
+                        <div class="field">
+                            <label>Nombre del Platillo</label>
+                            <input type="text" id="name" placeholder="Ej: Huevos Benedictinos">
+                        </div>
+                        <div class="field">
+                            <label>Categoría</label>
+                            <select id="category">
+                                <!-- Loaded via JS -->
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label>Descripción</label>
+                            <textarea id="description" rows="3" placeholder="Describe los ingredientes y el sabor..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>Precios y Variantes</h3>
+                        <div class="field">
+                            <label>Precio Base ($)</label>
+                            <input type="number" id="price" placeholder="0.00">
+                        </div>
+                        <div class="variants-container">
+                            <label style="font-size: 0.7rem; color: #888; display: block; margin-bottom: 0.5rem;">VARIANTES (OPCIONAL)</label>
+                            <div id="variants-list">
+                                <!-- Variant rows added here -->
+                            </div>
+                            <button type="button" class="btn-add-variant" onclick="addVariantRow()">+ Agregar Tamaño/Versión</button>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>Visuales y Etiquetas</h3>
+                        <div class="field">
+                            <label>Imagen (URL)</label>
+                            <input type="url" id="image" placeholder="https://images.unsplash.com/...">
+                        </div>
+                        <div class="field">
+                            <label>Etiquetas</label>
+                            <div id="tag-cloud" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">
+                                <!-- Tags toggles here -->
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" id="featured">
+                                <span style="font-size: 0.9rem; text-transform: none; color: #333;">Platillo del Día / Destacado</span>
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </main>
+
+        <!-- PANE 3: PREVIEW -->
+        <section class="pane-preview">
+            <div class="preview-toolbar">
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <span style="font-size: 0.8rem; font-weight: 700; color: #666;">PREVIEW EN TIEMPO REAL</span>
+                    <select style="font-size: 0.75rem; padding: 0.2rem;" onchange="updatePreviewMode(this.value)">
+                        <option value="mobile">Vista Móvil</option>
+                        <option value="desktop">Vista Escritorio (Próximamente)</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label for="image">URL de Imagen</label>
-                    <input type="url" id="image" name="image">
+                <button class="btn btn-ghost" style="font-size: 0.7rem;" onclick="refreshPreview()">Refrescar</button>
+            </div>
+            <div class="preview-frame-container">
+                <div class="preview-frame" id="live-preview-mount">
+                    <!-- The public menu HTML/CSS will be injected/simulated here -->
+                    <div style="padding: 2rem; text-align: center; color: #999; font-style: italic;">
+                        Cargando preview...
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="adminTags">Etiquetas</label>
-                    <select id="adminTags" name="tags" multiple style="height: 100px;">
-                        <option value="v">Vegetariano</option>
-                        <option value="vg">Vegano</option>
-                        <option value="gf">Sin gluten</option>
-                        <option value="s">Signature</option>
-                        <option value="nuevo">Nuevo</option>
-                    </select>
-                    <small>Mantén Ctrl presionado para seleccionar varias</small>
-                </div>
-                <div class="form-group">
-                    <label>
-                        <input type="checkbox" name="featured" id="featured"> Destacado
-                    </label>
-                </div>
-                <button type="submit" class="btn-submit">Guardar Platillo</button>
-            </form>
-            <div id="adminStatus" class="status-msg"></div>
-            <button id="clearCustomDishes" style="margin-top: 1rem; background: none; border: none; color: #888; cursor: pointer; text-decoration: underline;">Limpiar formulario</button>
-        </section>
-
-        <!-- Product List -->
-        <section class="admin-card">
-            <h2>Inventario de Platillos</h2>
-            <ul id="adminProductList" class="product-list">
-                <!-- Products will be loaded here -->
-                <li class="product-item">Cargando platillos...</li>
-            </ul>
+            </div>
         </section>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-init.js"></script>
     <script src="auth.js"></script>
-    <script>
-        // Check if user is admin
-        window.auth.requireAdmin();
-
-        // This script will be mostly handled by Menu/JavaScript.js but we can add dashboard specific logic here
-        // or just let JavaScript.js take over if we include it.
-    </script>
-    <script src="JavaScript.js"></script>
+    <!-- We will need a specific admin-logic.js to handle the workspace -->
+    <script src="admin-workspace.js"></script>
 </body>
 </html>
