@@ -18,12 +18,16 @@
         body {
             background-color: #fff;
             font-family: 'Syne', sans-serif;
+            color: #1a1a1a;
             margin: 0;
             padding: 0;
             height: 100vh;
             overflow: hidden;
             display: flex;
             flex-direction: column;
+        }
+        h1, h2, h3, .font-serif {
+            font-family: 'Cormorant Garamond', serif;
         }
         .admin-nav {
             background: #1a1a1a;
@@ -35,8 +39,9 @@
             z-index: 100;
         }
         .admin-nav h1 {
-            font-family: 'DM Serif Display', serif;
-            font-size: 1.25rem;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.75rem;
+            font-weight: 500;
             margin: 0;
             color: var(--color-gold);
         }
@@ -59,6 +64,26 @@
             display: flex;
             flex-direction: column;
         }
+        .pane-tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+        }
+        .pane-tab {
+            flex: 1;
+            padding: 0.75rem;
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            color: #999;
+        }
+        .pane-tab.active {
+            color: var(--color-gold);
+            border-bottom-color: var(--color-gold);
+            background: #fff;
+        }
         .pane-header {
             padding: 1rem;
             border-bottom: 1px solid #eee;
@@ -67,11 +92,9 @@
             align-items: center;
         }
         .pane-header h2 {
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            font-size: 1.2rem;
             margin: 0;
-            color: #666;
+            color: #333;
         }
         .catalog-list {
             flex: 1;
@@ -119,8 +142,9 @@
             margin-bottom: 2rem;
         }
         .form-section h3 {
-            font-family: 'DM Serif Display', serif;
-            font-size: 1.2rem;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.5rem;
+            font-weight: 500;
             margin-bottom: 1rem;
             color: #333;
         }
@@ -215,6 +239,34 @@
             font-weight: 800;
         }
         .status-badge.featured { background: #fff3cd; color: #856404; }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            width: 400px;
+            max-width: 90%;
+        }
+        .modal h2 { margin-top: 0; margin-bottom: 1.5rem; }
+
+        .tag-manager-item, .cat-manager-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            border-bottom: 1px solid #eee;
+        }
     </style>
 </head>
 <body>
@@ -229,12 +281,37 @@
     <div class="workspace">
         <!-- PANE 1: CATALOG -->
         <aside class="pane-catalog">
-            <div class="pane-header">
-                <h2>Categorías</h2>
-                <button class="btn btn-ghost" style="padding: 0.2rem 0.5rem;" onclick="openCategoryModal()">+</button>
+            <div class="pane-tabs">
+                <div class="pane-tab active" id="tab-btn-catalog" onclick="switchPaneTab('catalog')">Catálogo</div>
+                <div class="pane-tab" id="tab-btn-config" onclick="switchPaneTab('config')">Ajustes</div>
             </div>
-            <div class="catalog-list" id="admin-catalog-list">
-                <!-- Loaded via JS -->
+
+            <div id="tab-catalog" class="pane-content">
+                <div class="pane-header">
+                    <h2>Menú</h2>
+                    <button class="btn btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="resetEditor()">+ Nuevo</button>
+                </div>
+                <div class="catalog-list" id="admin-catalog-list">
+                    <!-- Loaded via JS -->
+                </div>
+            </div>
+
+            <div id="tab-config" class="pane-content" style="display: none;">
+                <div class="pane-header">
+                    <h2>Categorías</h2>
+                    <button class="btn btn-ghost" style="padding: 0.2rem 0.5rem;" onclick="openCategoryModal()">+</button>
+                </div>
+                <div id="category-manager-list" style="padding: 0.5rem;">
+                    <!-- Loaded via JS -->
+                </div>
+
+                <div class="pane-header" style="border-top: 1px solid #ddd; margin-top: 1rem;">
+                    <h2>Etiquetas</h2>
+                    <button class="btn btn-ghost" style="padding: 0.2rem 0.5rem;" onclick="openTagModal()">+</button>
+                </div>
+                <div id="tag-manager-list" style="padding: 0.5rem;">
+                    <!-- Loaded via JS -->
+                </div>
             </div>
         </aside>
 
@@ -260,8 +337,16 @@
                         </div>
                         <div class="field">
                             <label>Categoría</label>
-                            <select id="category">
+                            <select id="category" onchange="toggleDrinkFields()">
                                 <!-- Loaded via JS -->
+                            </select>
+                        </div>
+                        <div class="field" id="drink-type-field" style="display: none;">
+                            <label>Tipo de Bebida</label>
+                            <select id="drink-type">
+                                <option value="caliente">Caliente</option>
+                                <option value="fria">Fría</option>
+                                <option value="jugo">Jugo / Licuado</option>
                             </select>
                         </div>
                         <div class="field">
@@ -329,6 +414,39 @@
                 </div>
             </div>
         </section>
+    </div>
+
+    <!-- Modals -->
+    <div id="category-modal" class="modal-overlay">
+        <div class="modal">
+            <h2 id="cat-modal-title">Nueva Categoría</h2>
+            <div class="field">
+                <label>Nombre</label>
+                <input type="text" id="new-cat-name" placeholder="Ej: Especiales">
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button class="btn btn-ghost" onclick="closeModals()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveCategory()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="tag-modal" class="modal-overlay">
+        <div class="modal">
+            <h2>Nueva Etiqueta</h2>
+            <div class="field">
+                <label>ID (corto, ej: v)</label>
+                <input type="text" id="new-tag-id" placeholder="ej: v">
+            </div>
+            <div class="field">
+                <label>Nombre (ej: Vegetariano)</label>
+                <input type="text" id="new-tag-label" placeholder="ej: Vegetariano">
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button class="btn btn-ghost" onclick="closeModals()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveTag()">Guardar</button>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
