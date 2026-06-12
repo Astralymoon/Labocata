@@ -85,10 +85,6 @@ document.querySelectorAll(".bebidas-filter-btn").forEach((btn) => {
 
 
 // ===== ADMIN MENU =====
-const CUSTOM_DISHES_KEY = "labocata_custom_dishes";
-const MENU_CATEGORIES_KEY = "labocata_menu_categories";
-const MENU_TAGS_KEY = "labocata_menu_tags";
-const SPOTLIGHT_KEY = "labocata_spotlight_schedule";
 const defaultMenuCategories = [
   { id: "clasicos", label: "Clasicos" },
   { id: "bocadillos", label: "Bocadillos" },
@@ -102,17 +98,6 @@ const defaultMenuTags = [
   { id: "s", label: "Signature" },
   { id: "nuevo", label: "Nuevo" }
 ];
-const baseSpotlightItems = [
-  { id: "huevos-benedictinos", name: "Huevos Benedictinos", price: 189, image: "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=800&q=80" },
-  { id: "cafe-de-olla", name: "Cafe de Olla", price: 55, image: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800&q=80" },
-  { id: "avocado-toast", name: "Avocado Toast", price: 149, image: "https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=600&q=80" },
-  { id: "cold-brew", name: "Cold Brew", price: 75, image: "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=600&q=80" }
-];
-const dayLabels = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado"];
-let activeSpotlightItems = [
-  { name: "Huevos Benedictinos", price: 189, image: "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=800&q=80" },
-  { name: "Cafe de Olla", price: 55, image: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800&q=80" }
-];
 
 function escapeHtml(value = "") {
   return String(value).replace(/[&<>"']/g, (char) => ({
@@ -124,45 +109,47 @@ function escapeHtml(value = "") {
   }[char]));
 }
 
-function slugify(value = "") {
-  return String(value)
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 42) || "platillo";
-}
 
-function readCustomDishes() {
+async function readCustomDishes() {
   try {
-    return JSON.parse(localStorage.getItem(CUSTOM_DISHES_KEY)) || [];
+    const { data, error } = await window.supabaseClient
+      .from('products')
+      .select('*');
+    if (error) throw error;
+    return data || [];
   } catch (e) {
+    console.error("Error fetching products:", e);
     return [];
   }
 }
 
-function writeCustomDishes(dishes) {
-  try {
-    localStorage.setItem(CUSTOM_DISHES_KEY, JSON.stringify(dishes));
-  } catch (e) {}
-}
-
-function readMenuCatalog(key, defaults) {
-  try {
-    const saved = JSON.parse(localStorage.getItem(key)) || [];
-    const merged = [...defaults];
-    saved.forEach((item) => {
-      if (!merged.some((existing) => existing.id === item.id)) merged.push(item);
-    });
-    return merged;
-  } catch (e) {
-    return defaults;
+async function readMenuCatalog(type, defaults) {
+  // type is expected to be 'categories' or 'tags'
+  // For categories, we fetch from 'categories' table
+  if (type === 'categories') {
+    try {
+      const { data, error } = await window.supabaseClient
+        .from('categories')
+        .select('*');
+      if (error) throw error;
+      // Merge with defaults if necessary or just return data
+      const merged = [...defaults];
+      (data || []).forEach((item) => {
+        if (!merged.some((existing) => existing.id === item.id)) merged.push({id: item.id, label: item.name});
+      });
+      return merged;
+    } catch (e) {
+      console.error("Error fetching categories:", e);
+      return defaults;
+    }
   }
+  // For tags, we might still use defaults or a 'tags' table if added.
+  return defaults;
 }
 
+// Tags are not yet migrated to Supabase tables, keeping them as defaults
 function getTagLabels() {
-  return readMenuCatalog(MENU_TAGS_KEY, defaultMenuTags).reduce((map, tag) => {
+  return defaultMenuTags.reduce((map, tag) => {
     map[tag.id] = tag.label;
     return map;
   }, {});
@@ -192,13 +179,14 @@ function ensureCustomCategorySection(category) {
   menuBody.append(header, grid);
 }
 
-function setupDynamicMenuCatalogs() {
-  readMenuCatalog(MENU_CATEGORIES_KEY, defaultMenuCategories).forEach(ensureCustomCategorySection);
+async function setupDynamicMenuCatalogs() {
+  const categories = await readMenuCatalog('categories', defaultMenuCategories);
+  categories.forEach(ensureCustomCategorySection);
 
   const filterInner = document.querySelector(".filter-inner");
   if (!filterInner) return;
 
-  readMenuCatalog(MENU_CATEGORIES_KEY, defaultMenuCategories).forEach((category) => {
+  categories.forEach((category) => {
     if (category.id === "bebidas" || filterInner.querySelector(`[data-filter="${category.id}"]`)) return;
     const divider = document.createElement("div");
     divider.className = "filter-divider admin-added-filter";
@@ -218,7 +206,7 @@ function setupDynamicMenuCatalogs() {
 }
 
 function getCategoryGrid(dish) {
-  const category = typeof dish === "string" ? dish : dish.category;
+  const category = typeof dish === "string" ? dish : dish.category_id;
   if (category === "bebidas") {
     const sub = (typeof dish === "object" && dish.drinkSubcat) ? dish.drinkSubcat : "caliente";
     return document.querySelector(`.bebidas-grid[data-drink-cat="${sub}"]`);
@@ -293,12 +281,12 @@ function renderCustomDish(dish) {
   const isFeatured = style === "featured";
   const usePhoto = hasImage && style !== "text";
   card.className = `menu-item admin-added${isFeatured && usePhoto ? " featured" : usePhoto ? " has-photo" : " text-card"}`;
-  card.dataset.cat = dish.category;
-  if (dish.category === "bebidas" && dish.drinkSubcat) card.dataset.drink = dish.drinkSubcat;
+  card.dataset.cat = dish.category_id;
+  if (dish.category_id === "bebidas" && dish.drinkSubcat) card.dataset.drink = dish.drinkSubcat;
 
   if (isFeatured && usePhoto) {
     card.innerHTML = `
-      <div class="item-photo"><img src="${escapeHtml(dish.image)}" alt="${escapeHtml(dish.name)}" loading="lazy" /></div>
+      <div class="item-photo"><img src="${escapeHtml(dish.image_url)}" alt="${escapeHtml(dish.name)}" loading="lazy" /></div>
       <div class="item-body">
         <span class="featured-badge">Nuevo en admin</span>
         <div class="item-header">
@@ -318,7 +306,7 @@ function renderCustomDish(dish) {
     `;
   } else {
     card.innerHTML = `
-      ${hasImage ? `<div class="item-photo"><img src="${escapeHtml(dish.image)}" alt="${escapeHtml(dish.name)}" loading="lazy" /></div><div class="item-body">` : ""}
+      ${hasImage ? `<div class="item-photo"><img src="${escapeHtml(dish.image_url)}" alt="${escapeHtml(dish.name)}" loading="lazy" /></div><div class="item-body">` : ""}
       <div class="item-header">
         <h3 class="item-name">${escapeHtml(dish.name)}</h3>
         <span class="item-price">$${Number(dish.price).toLocaleString("es-MX")}</span>
@@ -342,53 +330,124 @@ function renderCustomDish(dish) {
   if (orderItems[dish.name]) syncInlineControlForItem(dish.name);
 }
 
-function renderCustomDishes() {
+async function renderCustomDishes() {
   document.querySelectorAll(".admin-added").forEach((card) => card.remove());
-  readCustomDishes().forEach(renderCustomDish);
+  const dishes = await readCustomDishes();
+  dishes.forEach(renderCustomDish);
 }
 
 function setupAdminPanel() {
   const form = document.getElementById("adminDishForm");
   const clearBtn = document.getElementById("clearCustomDishes");
   const status = document.getElementById("adminStatus");
+  const productList = document.getElementById("adminProductList");
+
   if (!form) return;
 
-  form.addEventListener("submit", (event) => {
+  const refreshAdminList = async () => {
+    if (!productList) return;
+    const dishes = await readCustomDishes();
+    productList.innerHTML = "";
+    dishes.forEach(dish => {
+      const li = document.createElement("li");
+      li.className = "product-item";
+      li.innerHTML = `
+        <span><strong>${escapeHtml(dish.name)}</strong> - $${dish.price}</span>
+        <div class="product-actions">
+          <button class="btn-edit" onclick="editProduct('${dish.id}')">Editar</button>
+          <button class="btn-delete" onclick="deleteProduct('${dish.id}', '${escapeHtml(dish.name)}')">Borrar</button>
+        </div>
+      `;
+      productList.appendChild(li);
+    });
+  };
+
+  window.editProduct = async (id) => {
+    const { data, error } = await window.supabaseClient.from('products').select('*').eq('id', id).single();
+    if (data) {
+      document.getElementById("dishId").value = data.id;
+      document.getElementById("name").value = data.name;
+      document.getElementById("price").value = data.price;
+      document.getElementById("description").value = data.description;
+      document.getElementById("category").value = data.category_id;
+      document.getElementById("image").value = data.image_url || "";
+      document.getElementById("featured").checked = data.featured;
+      // Tags handling might be tricky with multiple select
+      const tagSelect = document.getElementById("adminTags");
+      Array.from(tagSelect.options).forEach(opt => {
+        opt.selected = (data.tags || []).includes(opt.value);
+      });
+      status.textContent = "Editando: " + data.name;
+      status.className = "status-msg success";
+      status.style.display = "block";
+    }
+  };
+
+  window.deleteProduct = async (id, name) => {
+    if (confirm(`¿Estás seguro de borrar "${name}"?`)) {
+      const { error } = await window.supabaseClient.from('products').delete().eq('id', id);
+      if (error) {
+        status.textContent = "Error al borrar: " + error.message;
+        status.className = "status-msg error";
+      } else {
+        status.textContent = "Producto borrado.";
+        status.className = "status-msg success";
+        await refreshAdminList();
+        await renderCustomDishes();
+      }
+      status.style.display = "block";
+    }
+  };
+
+  form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const data = new FormData(form);
+    const id = document.getElementById("dishId").value;
     const name = String(data.get("name") || "").trim();
     const price = Number(data.get("price"));
     const description = String(data.get("description") || "").trim();
     if (!name || !price || !description) return;
 
     const dish = {
-      id: `${Date.now()}-${slugify(name)}`,
       name,
       price,
       description,
-      category: String(data.get("category") || "clasicos"),
-      image: String(data.get("image") || "").trim(),
+      category_id: String(data.get("category") || "clasicos"),
+      image_url: String(data.get("image") || "").trim(),
       tags: getSelectedOptions(document.getElementById("adminTags")),
       featured: Boolean(data.get("featured"))
     };
 
-    const dishes = readCustomDishes();
-    dishes.push(dish);
-    writeCustomDishes(dishes);
-    renderCustomDish(dish);
-    form.reset();
-    status.textContent = `${dish.name} agregado al menu.`;
-    showToast(dish.name, "agregado al menu");
+    let result;
+    if (id) {
+      result = await window.supabaseClient.from('products').update(dish).eq('id', id);
+    } else {
+      result = await window.supabaseClient.from('products').insert([dish]);
+    }
+
+    if (result.error) {
+      status.textContent = "Error: " + result.error.message;
+      status.className = "status-msg error";
+    } else {
+      status.textContent = id ? "Platillo actualizado." : "Platillo agregado.";
+      status.className = "status-msg success";
+      form.reset();
+      document.getElementById("dishId").value = "";
+      await refreshAdminList();
+      await renderCustomDishes();
+    }
+    status.style.display = "block";
   });
 
   if (clearBtn) {
     clearBtn.addEventListener("click", () => {
-      writeCustomDishes([]);
-      document.querySelectorAll(".admin-added").forEach((card) => card.remove());
-      status.textContent = "Platillos agregados eliminados.";
-      showToast("Admin", "platillos agregados eliminados");
+      form.reset();
+      document.getElementById("dishId").value = "";
+      status.style.display = "none";
     });
   }
+
+  refreshAdminList();
 }
  // ===== SOUND EFFECT =====
 const addSound = new Audio("Sounds/Click.mp3");
@@ -457,10 +516,10 @@ function normalizeCartItems(items) {
   return normalized;
 }
 
-// MEJORA: cargar carrito desde localStorage al inicio
+// MEJORA: cargar carrito desde sesión al inicio (NO localStorage)
 function loadCartFromStorage() {
   try {
-    const saved = localStorage.getItem("labocata_cart");
+    const saved = sessionStorage.getItem("labocata_cart");
     if (saved) {
       orderItems = normalizeCartItems(JSON.parse(saved));
       // Reconstruir estado visual de los botones
@@ -484,11 +543,11 @@ function loadCartFromStorage() {
   }
 }
 
-// MEJORA: guardar carrito en localStorage
+// MEJORA: guardar carrito en sesión (NO localStorage)
 function saveCartToStorage() {
   try {
     orderItems = normalizeCartItems(orderItems);
-    localStorage.setItem("labocata_cart", JSON.stringify(orderItems));
+    sessionStorage.setItem("labocata_cart", JSON.stringify(orderItems));
   } catch (e) {}
 }
 
@@ -809,7 +868,7 @@ function saveLastOrder(orderNum, items, notes) {
     createdAt: new Date().toISOString()
   };
   try {
-    localStorage.setItem("labocata_last_order", JSON.stringify(snapshot));
+    sessionStorage.setItem("labocata_last_order", JSON.stringify(snapshot));
   } catch (e) {}
   renderLastOrder(snapshot);
 }
@@ -820,7 +879,7 @@ function renderLastOrder(order = null) {
 
   if (!order) {
     try {
-      const saved = localStorage.getItem("labocata_last_order");
+      const saved = sessionStorage.getItem("labocata_last_order");
       order = saved ? JSON.parse(saved) : null;
     } catch (e) {
       order = null;
@@ -856,7 +915,7 @@ function renderLastOrder(order = null) {
 
 function repeatLastOrder() {
   try {
-    const saved = localStorage.getItem("labocata_last_order");
+    const saved = sessionStorage.getItem("labocata_last_order");
     if (!saved) {
       showToast("Sin pedido previo", "confirma una orden primero");
       return;
@@ -1023,9 +1082,9 @@ document.addEventListener("keydown", (e) => {
 });
 
 // MEJORA: cargar carrito guardado al iniciar
-document.addEventListener("DOMContentLoaded", () => {
-  setupDynamicMenuCatalogs();
-  renderCustomDishes();
+document.addEventListener("DOMContentLoaded", async () => {
+  await setupDynamicMenuCatalogs();
+  await renderCustomDishes();
   setupAdminPanel();
   loadCartFromStorage();
   renderLastOrder();
