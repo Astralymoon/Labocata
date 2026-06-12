@@ -3,214 +3,425 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard | Labocata.</title>
+    <title>Admin Panel | Labocata.</title>
+    <!-- Use same fonts as public menu -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Syne:wght@400;500;600;700;800&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="CSS.css">
     <style>
         :root {
-            --color-gold: #c5a059;
-            --color-bg: #f4f1ea;
+            --admin-sidebar-w: 260px;
         }
         body {
-            background-color: var(--color-bg);
-            font-family: 'Syne', sans-serif;
-            margin: 0;
-            padding: 2rem;
-        }
-        .admin-header {
+            background-color: var(--ivory-dim);
+            font-family: "Syne", sans-serif;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-            border-bottom: 2px solid var(--color-gold);
-            padding-bottom: 1rem;
+            height: 100vh;
+            overflow: hidden;
         }
-        .admin-header h1 {
-            font-family: 'DM Serif Display', serif;
-            color: var(--color-gold);
-            margin: 0;
+
+        /* Sidebar Navigation */
+        .admin-sidebar {
+            width: var(--admin-sidebar-w);
+            background: var(--espresso);
+            color: var(--ivory);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            z-index: 300;
         }
-        .logout-btn {
-            background-color: #d9534f;
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 600;
+        .sidebar-header {
+            padding: var(--sp-3);
+            border-bottom: 1px solid rgba(250,247,242,0.1);
         }
-        .admin-grid {
-            display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 2rem;
-        }
-        @media (max-width: 900px) {
-            .admin-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-        .admin-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        }
-        .admin-card h2 {
-            margin-top: 0;
-            font-family: 'DM Serif Display', serif;
+        .sidebar-header h1 {
+            font-family: "DM Serif Display", serif;
             font-size: 1.5rem;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 0.5rem;
-            margin-bottom: 1rem;
+            color: var(--gold);
         }
-        .form-group {
-            margin-bottom: 1rem;
+        .sidebar-nav {
+            flex: 1;
+            padding: var(--sp-2) 0;
         }
-        .form-group label {
-            display: block;
-            margin-bottom: 0.3rem;
-            font-weight: 500;
-        }
-        .form-group input, .form-group select, .form-group textarea {
-            width: 100%;
-            padding: 0.6rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-family: inherit;
-        }
-        .btn-submit {
-            background-color: var(--color-gold);
-            color: white;
-            border: none;
-            padding: 0.8rem 1.5rem;
-            border-radius: 4px;
+        .nav-item {
+            padding: 12px var(--sp-3);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: rgba(250,247,242,0.6);
+            text-decoration: none;
+            transition: all var(--t-fast);
             cursor: pointer;
-            font-weight: 600;
-            width: 100%;
+            font-size: 0.85rem;
+            letter-spacing: 0.05em;
         }
-        .status-msg {
-            margin-top: 1rem;
-            padding: 0.5rem;
-            border-radius: 4px;
-            display: none;
+        .nav-item:hover, .nav-item.active {
+            color: var(--ivory);
+            background: rgba(250,247,242,0.05);
         }
-        .status-msg.success {
-            background-color: #dff0d8;
-            color: #3c763d;
-            display: block;
+        .nav-item.active {
+            border-left: 3px solid var(--gold);
+            padding-left: calc(var(--sp-3) - 3px);
         }
-        .status-msg.error {
-            background-color: #f2dede;
-            color: #a94442;
-            display: block;
+        .sidebar-footer {
+            padding: var(--sp-3);
+            border-top: 1px solid rgba(250,247,242,0.1);
         }
-        .product-list {
-            list-style: none;
-            padding: 0;
+
+        /* Main Content Split View */
+        .admin-main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
         }
-        .product-item {
+
+        /* Management Panel (Left) */
+        .mgmt-panel {
+            width: 450px;
+            background: white;
+            border-right: 1px solid rgba(155,111,62,0.15);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .mgmt-header {
+            padding: var(--sp-3);
+            border-bottom: 1px solid #eee;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0.8rem;
+        }
+        .mgmt-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--sp-3);
+        }
+
+        /* Preview Panel (Right) */
+        .preview-panel {
+            flex: 1;
+            background: var(--ivory);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+        .preview-header {
+            padding: 12px var(--sp-3);
+            background: white;
             border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--warm-grey);
         }
-        .product-item:last-child {
-            border-bottom: none;
+        .preview-frame {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px;
+            /* Scale down content to fit better if needed */
         }
-        .product-actions button {
-            margin-left: 0.5rem;
-            cursor: pointer;
-            padding: 0.3rem 0.6rem;
-            border-radius: 4px;
+
+        /* Forms */
+        .form-section {
+            margin-bottom: var(--sp-4);
+        }
+        .form-section h3 {
+            font-family: "DM Serif Display", serif;
+            margin-bottom: var(--sp-2);
+            font-size: 1.2rem;
+            color: var(--espresso);
+        }
+        .input-group {
+            margin-bottom: 12px;
+        }
+        .input-group label {
+            display: block;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--warm-grey);
+            margin-bottom: 4px;
+        }
+        .input-group input, .input-group textarea, .input-group select {
+            width: 100%;
+            padding: 10px;
             border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 0.9rem;
         }
-        .btn-delete {
-            background-color: #f8d7da;
-            color: #721c24;
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        /* Variant item */
+        .variant-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 8px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+        .btn-remove {
+            color: #d9534f;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        /* Buttons */
+        .btn-admin {
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-family: "Syne", sans-serif;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            border: none;
+            transition: all var(--t-fast);
+        }
+        .btn-primary { background: var(--espresso); color: var(--gold); }
+        .btn-primary:hover { background: var(--bronze); color: white; }
+        .btn-outline { background: transparent; border: 1px solid #ddd; color: var(--warm-grey); }
+        .btn-outline:hover { background: #eee; }
+
+        /* Tag chips in form */
+        .tag-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .tag-chip {
+            padding: 4px 10px;
+            border-radius: var(--r-full);
+            background: var(--gold10);
+            border: 1px solid var(--gold20);
+            font-size: 0.65rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .tag-chip.active {
+            background: var(--gold);
+            color: var(--espresso);
+        }
+
+        /* Lists in Mgmt */
+        .item-list-entry {
+            padding: 12px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+        }
+        .item-list-entry:hover {
+            background: #fafafa;
+        }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
+
+        /* Real-time Preview Adjustments */
+        .preview-frame .menu-body { padding: 0; }
+        .preview-frame .cat-header { padding-top: 20px; }
+
+        /* Floating action buttons in mgmt */
+        .fab-add {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--gold);
+            color: var(--espresso);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-md);
+            cursor: pointer;
+            z-index: 10;
         }
     </style>
 </head>
 <body>
-    <header class="admin-header">
-        <h1>Admin Dashboard</h1>
-        <button class="logout-btn" onclick="window.auth.signOut()">Cerrar Sesión</button>
-    </header>
+    <!-- Sidebar Navigation -->
+    <aside class="admin-sidebar">
+        <div class="sidebar-header">
+            <h1>Labocata.</h1>
+        </div>
+        <nav class="sidebar-nav">
+            <a class="nav-item active" data-view="products">
+                <span>Platillos</span>
+            </a>
+            <a class="nav-item" data-view="categories">
+                <span>Categorías (Divisores)</span>
+            </a>
+            <a class="nav-item" data-view="tags">
+                <span>Etiquetas</span>
+            </a>
+            <a class="nav-item" data-view="special">
+                <span>Platillo del Día</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <button class="btn-admin btn-outline" onclick="window.auth.signOut()" style="width: 100%;">Cerrar Sesión</button>
+        </div>
+    </aside>
 
-    <div class="admin-grid">
-        <!-- Add Product Form -->
-        <section class="admin-card">
-            <h2>Agregar / Editar Platillo</h2>
-            <form id="adminDishForm">
-                <input type="hidden" id="dishId">
-                <div class="form-group">
-                    <label for="name">Nombre</label>
-                    <input type="text" id="name" name="name" required>
-                </div>
-                <div class="form-group">
-                    <label for="price">Precio ($)</label>
-                    <input type="number" id="price" name="price" required>
-                </div>
-                <div class="form-group">
-                    <label for="description">Descripción</label>
-                    <textarea id="description" name="description" rows="3" required></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="category">Categoría</label>
-                    <select id="category" name="category" required>
-                        <!-- Categories will be loaded dynamically -->
-                        <option value="clasicos">Clásicos</option>
-                        <option value="bocadillos">Bocadillos</option>
-                        <option value="dulce">Mesa Dulce</option>
-                        <option value="bebidas">Bebidas</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="image">URL de Imagen</label>
-                    <input type="url" id="image" name="image">
-                </div>
-                <div class="form-group">
-                    <label for="adminTags">Etiquetas</label>
-                    <select id="adminTags" name="tags" multiple style="height: 100px;">
-                        <option value="v">Vegetariano</option>
-                        <option value="vg">Vegano</option>
-                        <option value="gf">Sin gluten</option>
-                        <option value="s">Signature</option>
-                        <option value="nuevo">Nuevo</option>
-                    </select>
-                    <small>Mantén Ctrl presionado para seleccionar varias</small>
-                </div>
-                <div class="form-group">
-                    <label>
-                        <input type="checkbox" name="featured" id="featured"> Destacado
-                    </label>
-                </div>
-                <button type="submit" class="btn-submit">Guardar Platillo</button>
-            </form>
-            <div id="adminStatus" class="status-msg"></div>
-            <button id="clearCustomDishes" style="margin-top: 1rem; background: none; border: none; color: #888; cursor: pointer; text-decoration: underline;">Limpiar formulario</button>
-        </section>
+    <!-- Main Content -->
+    <main class="admin-main">
+        <!-- Management Panel -->
+        <div class="mgmt-panel">
+            <div class="mgmt-header">
+                <h2 id="viewTitle">Gestión de Platillos</h2>
+                <button class="btn-admin btn-primary" id="btnAddNew">Nuevo +</button>
+            </div>
 
-        <!-- Product List -->
-        <section class="admin-card">
-            <h2>Inventario de Platillos</h2>
-            <ul id="adminProductList" class="product-list">
-                <!-- Products will be loaded here -->
-                <li class="product-item">Cargando platillos...</li>
-            </ul>
-        </section>
-    </div>
+            <div class="mgmt-content" id="mgmtContent">
+                <!-- Views will be loaded here -->
+                 <div id="productList" class="view-pane">
+                     <p>Cargando platillos...</p>
+                 </div>
 
+                 <!-- Product Edit Form (Overlay or separate view) -->
+                 <div id="productForm" class="view-pane" style="display:none;">
+                     <button class="btn-admin btn-outline" id="btnBackToList" style="margin-bottom: 12px;">← Volver</button>
+                     <form id="adminDishForm">
+                         <input type="hidden" id="dishId">
+                         <div class="form-section">
+                             <h3>Información Básica</h3>
+                             <div class="input-group">
+                                 <label>Nombre del Platillo</label>
+                                 <input type="text" id="name" name="name" placeholder="Ej: Huevos Benedictinos" required>
+                             </div>
+                             <div class="input-group">
+                                 <label>Descripción</label>
+                                 <textarea id="description" name="description" rows="3" placeholder="Ingredientes y preparación..."></textarea>
+                             </div>
+                             <div class="input-row">
+                                 <div class="input-group">
+                                     <label>Categoría</label>
+                                     <select id="category" name="category_id">
+                                         <!-- Dynamic options -->
+                                     </select>
+                                 </div>
+                                 <div class="input-group">
+                                     <label>Precio Base ($)</label>
+                                     <input type="number" id="price" name="price" step="0.01">
+                                 </div>
+                             </div>
+                         </div>
+
+                         <div class="form-section">
+                             <h3>Variantes (Tamaños/Versiones)</h3>
+                             <div id="variantsContainer">
+                                 <!-- Dynamic variants -->
+                             </div>
+                             <button type="button" class="btn-admin btn-outline" id="btnAddVariant" style="width: 100%; margin-top: 8px;">+ Agregar Variante</button>
+                         </div>
+
+                         <div class="form-section">
+                             <h3>Media & Tags</h3>
+                             <div class="input-group">
+                                 <label>URL de Imagen</label>
+                                 <input type="url" id="image_url" name="image_url" placeholder="https://...">
+                             </div>
+                             <div class="input-group">
+                                 <label>Etiquetas</label>
+                                 <div class="tag-chips" id="tagSelector">
+                                     <!-- Dynamic tags -->
+                                 </div>
+                             </div>
+                         </div>
+
+                         <div class="form-section">
+                             <div class="input-group" style="display:flex; align-items:center; gap:10px;">
+                                 <input type="checkbox" id="featured" name="featured" style="width:auto;">
+                                 <label style="margin-bottom:0;">Destacar en menú</label>
+                             </div>
+                             <div class="input-group" style="display:flex; align-items:center; gap:10px;">
+                                 <input type="checkbox" id="is_today_special" name="is_today_special" style="width:auto;">
+                                 <label style="margin-bottom:0;">Platillo del día</label>
+                             </div>
+                         </div>
+
+                         <button type="submit" class="btn-admin btn-primary" style="width: 100%; padding: 15px;">Guardar Cambios</button>
+                         <button type="button" class="btn-admin btn-outline danger" id="btnDeleteProduct" style="width: 100%; margin-top: 10px; color: #d9534f; border-color: #d9534f;">Eliminar Platillo</button>
+                     </form>
+                 </div>
+
+                 <!-- Category View -->
+                 <div id="categoryList" class="view-pane" style="display:none;">
+                     <div class="input-group">
+                        <label>Nueva Categoría</label>
+                        <div style="display:flex; gap:8px;">
+                            <input type="text" id="newCatName" placeholder="Ej: Postres">
+                            <button class="btn-admin btn-primary" id="btnAddCat">Agregar</button>
+                        </div>
+                     </div>
+                     <div id="categoriesContainer" style="margin-top:20px;">
+                         <!-- Dynamic categories -->
+                     </div>
+                 </div>
+
+                 <!-- Tags View -->
+                 <div id="tagList" class="view-pane" style="display:none;">
+                     <div class="input-group">
+                        <label>Nueva Etiqueta</label>
+                        <div style="display:flex; gap:8px;">
+                            <input type="text" id="newTagName" placeholder="Ej: Spicy">
+                            <button class="btn-admin btn-primary" id="btnAddTag">Agregar</button>
+                        </div>
+                     </div>
+                     <div id="tagsContainer" style="margin-top:20px;">
+                         <!-- Dynamic tags -->
+                     </div>
+                 </div>
+            </div>
+        </div>
+
+        <!-- Preview Panel -->
+        <div class="preview-panel">
+            <div class="preview-header">
+                <span>Preview en Tiempo Real</span>
+                <div style="display:flex; gap:12px;">
+                    <span style="color:var(--gold);">● Live</span>
+                    <span id="previewStatus">Guardado</span>
+                </div>
+            </div>
+            <div class="preview-frame" id="menuPreview">
+                <!-- Real menu layout replicated here -->
+                 <main class="menu-body" id="previewMenuBody">
+                     <!-- Categories and Products will be rendered here exactly as in frontend -->
+                 </main>
+            </div>
+        </div>
+    </main>
+
+    <!-- Supabase & Logic -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-init.js"></script>
     <script src="auth.js"></script>
     <script>
         // Check if user is admin
         window.auth.requireAdmin();
-
-        // This script will be mostly handled by Menu/JavaScript.js but we can add dashboard specific logic here
-        // or just let JavaScript.js take over if we include it.
     </script>
     <script src="JavaScript.js"></script>
+    <!-- Add specialized admin logic -->
+    <script src="admin-logic.js"></script>
 </body>
 </html>

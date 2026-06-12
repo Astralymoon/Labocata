@@ -284,16 +284,20 @@ function renderCustomDish(dish) {
   card.dataset.cat = dish.category_id;
   if (dish.category_id === "bebidas" && dish.drinkSubcat) card.dataset.drink = dish.drinkSubcat;
 
+  const variantsHtml = dish.variants ? dish.variants.map(v => `<div class="variant-item" style="font-size: 0.8rem; color: var(--bronze); margin-bottom: 2px;">${v.label}: $${v.price}</div>`).join('') : '';
+  const priceDisplay = dish.price ? `$${Number(dish.price).toLocaleString("es-MX")}` : 'Varias';
+
   if (isFeatured && usePhoto) {
     card.innerHTML = `
       <div class="item-photo"><img src="${escapeHtml(dish.image_url)}" alt="${escapeHtml(dish.name)}" loading="lazy" /></div>
       <div class="item-body">
-        <span class="featured-badge">Nuevo en admin</span>
+        <span class="featured-badge">${dish.is_today_special ? '✦ Platillo del Día' : 'Nuevo en admin'}</span>
         <div class="item-header">
           <h3 class="item-name">${escapeHtml(dish.name)}</h3>
-          <span class="item-price">$${Number(dish.price).toLocaleString("es-MX")}</span>
+          <span class="item-price">${priceDisplay}</span>
         </div>
         <p class="item-desc">${escapeHtml(dish.description)}</p>
+        ${variantsHtml ? `<div class="item-variants" style="margin-bottom: 12px;">${variantsHtml}</div>` : ''}
         <div class="item-footer">
           <div class="item-tags">${renderTagSpans(dish.tags, dish.customTags)}</div>
           <div class="qty-ctrl" id="${qtyId}"></div>
@@ -309,9 +313,10 @@ function renderCustomDish(dish) {
       ${hasImage ? `<div class="item-photo"><img src="${escapeHtml(dish.image_url)}" alt="${escapeHtml(dish.name)}" loading="lazy" /></div><div class="item-body">` : ""}
       <div class="item-header">
         <h3 class="item-name">${escapeHtml(dish.name)}</h3>
-        <span class="item-price">$${Number(dish.price).toLocaleString("es-MX")}</span>
+        <span class="item-price">${priceDisplay}</span>
       </div>
       <p class="item-desc">${escapeHtml(dish.description)}</p>
+      ${variantsHtml ? `<div class="item-variants" style="margin-bottom: 12px;">${variantsHtml}</div>` : ''}
       <div class="item-footer">
         <div class="item-tags">${renderTagSpans(dish.tags, dish.customTags)}</div>
         <div class="qty-ctrl" id="${qtyId}"></div>
@@ -336,119 +341,8 @@ async function renderCustomDishes() {
   dishes.forEach(renderCustomDish);
 }
 
-function setupAdminPanel() {
-  const form = document.getElementById("adminDishForm");
-  const clearBtn = document.getElementById("clearCustomDishes");
-  const status = document.getElementById("adminStatus");
-  const productList = document.getElementById("adminProductList");
-
-  if (!form) return;
-
-  const refreshAdminList = async () => {
-    if (!productList) return;
-    const dishes = await readCustomDishes();
-    productList.innerHTML = "";
-    dishes.forEach(dish => {
-      const li = document.createElement("li");
-      li.className = "product-item";
-      li.innerHTML = `
-        <span><strong>${escapeHtml(dish.name)}</strong> - $${dish.price}</span>
-        <div class="product-actions">
-          <button class="btn-edit" onclick="editProduct('${dish.id}')">Editar</button>
-          <button class="btn-delete" onclick="deleteProduct('${dish.id}', '${escapeHtml(dish.name)}')">Borrar</button>
-        </div>
-      `;
-      productList.appendChild(li);
-    });
-  };
-
-  window.editProduct = async (id) => {
-    const { data, error } = await window.supabaseClient.from('products').select('*').eq('id', id).single();
-    if (data) {
-      document.getElementById("dishId").value = data.id;
-      document.getElementById("name").value = data.name;
-      document.getElementById("price").value = data.price;
-      document.getElementById("description").value = data.description;
-      document.getElementById("category").value = data.category_id;
-      document.getElementById("image").value = data.image_url || "";
-      document.getElementById("featured").checked = data.featured;
-      // Tags handling might be tricky with multiple select
-      const tagSelect = document.getElementById("adminTags");
-      Array.from(tagSelect.options).forEach(opt => {
-        opt.selected = (data.tags || []).includes(opt.value);
-      });
-      status.textContent = "Editando: " + data.name;
-      status.className = "status-msg success";
-      status.style.display = "block";
-    }
-  };
-
-  window.deleteProduct = async (id, name) => {
-    if (confirm(`¿Estás seguro de borrar "${name}"?`)) {
-      const { error } = await window.supabaseClient.from('products').delete().eq('id', id);
-      if (error) {
-        status.textContent = "Error al borrar: " + error.message;
-        status.className = "status-msg error";
-      } else {
-        status.textContent = "Producto borrado.";
-        status.className = "status-msg success";
-        await refreshAdminList();
-        await renderCustomDishes();
-      }
-      status.style.display = "block";
-    }
-  };
-
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const data = new FormData(form);
-    const id = document.getElementById("dishId").value;
-    const name = String(data.get("name") || "").trim();
-    const price = Number(data.get("price"));
-    const description = String(data.get("description") || "").trim();
-    if (!name || !price || !description) return;
-
-    const dish = {
-      name,
-      price,
-      description,
-      category_id: String(data.get("category") || "clasicos"),
-      image_url: String(data.get("image") || "").trim(),
-      tags: getSelectedOptions(document.getElementById("adminTags")),
-      featured: Boolean(data.get("featured"))
-    };
-
-    let result;
-    if (id) {
-      result = await window.supabaseClient.from('products').update(dish).eq('id', id);
-    } else {
-      result = await window.supabaseClient.from('products').insert([dish]);
-    }
-
-    if (result.error) {
-      status.textContent = "Error: " + result.error.message;
-      status.className = "status-msg error";
-    } else {
-      status.textContent = id ? "Platillo actualizado." : "Platillo agregado.";
-      status.className = "status-msg success";
-      form.reset();
-      document.getElementById("dishId").value = "";
-      await refreshAdminList();
-      await renderCustomDishes();
-    }
-    status.style.display = "block";
-  });
-
-  if (clearBtn) {
-    clearBtn.addEventListener("click", () => {
-      form.reset();
-      document.getElementById("dishId").value = "";
-      status.style.display = "none";
-    });
-  }
-
-  refreshAdminList();
-}
+// Removed duplicate setupAdminPanel logic, now handled in admin-logic.js
+function setupAdminPanel() { return; }
  // ===== SOUND EFFECT =====
 const addSound = new Audio("Sounds/Click.mp3");
 addSound.volume = 1;

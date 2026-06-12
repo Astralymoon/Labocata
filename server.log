@@ -1,0 +1,7 @@
+127.0.0.1 - - [12/Jun/2026 21:43:56] "GET /Menu/Admin.html HTTP/1.1" 200 -
+127.0.0.1 - - [12/Jun/2026 21:43:56] "GET /Menu/CSS.css HTTP/1.1" 200 -
+127.0.0.1 - - [12/Jun/2026 21:43:56] "GET /Menu/auth.js HTTP/1.1" 200 -
+127.0.0.1 - - [12/Jun/2026 21:43:56] "GET /Menu/supabase-init.js HTTP/1.1" 200 -
+127.0.0.1 - - [12/Jun/2026 21:43:56] "GET /Menu/admin-logic.js HTTP/1.1" 200 -
+127.0.0.1 - - [12/Jun/2026 21:43:56] "GET /Menu/JavaScript.js HTTP/1.1" 200 -
+127.0.0.1 - - [12/Jun/2026 21:43:56] "GET /Menu/login.html HTTP/1.1" 200 -
