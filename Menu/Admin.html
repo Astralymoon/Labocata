@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Labocata.</title>
+    <link rel="stylesheet" href="CSS.css">
+    <style>
+        :root {
+            --color-gold: #c5a059;
+            --color-bg: #f4f1ea;
+        }
+        body {
+            background-color: var(--color-bg);
+            font-family: 'Syne', sans-serif;
+            margin: 0;
+            padding: 2rem;
+        }
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid var(--color-gold);
+            padding-bottom: 1rem;
+        }
+        .admin-header h1 {
+            font-family: 'DM Serif Display', serif;
+            color: var(--color-gold);
+            margin: 0;
+        }
+        .logout-btn {
+            background-color: #d9534f;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .admin-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+        }
+        @media (max-width: 900px) {
+            .admin-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .admin-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .admin-card h2 {
+            margin-top: 0;
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.5rem;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.3rem;
+            font-weight: 500;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+        .btn-submit {
+            background-color: var(--color-gold);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            width: 100%;
+        }
+        .status-msg {
+            margin-top: 1rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+            display: none;
+        }
+        .status-msg.success {
+            background-color: #dff0d8;
+            color: #3c763d;
+            display: block;
+        }
+        .status-msg.error {
+            background-color: #f2dede;
+            color: #a94442;
+            display: block;
+        }
+        .product-list {
+            list-style: none;
+            padding: 0;
+        }
+        .product-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem;
+            border-bottom: 1px solid #eee;
+        }
+        .product-item:last-child {
+            border-bottom: none;
+        }
+        .product-actions button {
+            margin-left: 0.5rem;
+            cursor: pointer;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .btn-delete {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <header class="admin-header">
+        <h1>Admin Dashboard</h1>
+        <button class="logout-btn" onclick="window.auth.signOut()">Cerrar Sesión</button>
+    </header>
+
+    <div class="admin-grid">
+        <!-- Add Product Form -->
+        <section class="admin-card">
+            <h2>Agregar / Editar Platillo</h2>
+            <form id="adminDishForm">
+                <input type="hidden" id="dishId">
+                <div class="form-group">
+                    <label for="name">Nombre</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="price">Precio ($)</label>
+                    <input type="number" id="price" name="price" required>
+                </div>
+                <div class="form-group">
+                    <label for="description">Descripción</label>
+                    <textarea id="description" name="description" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="category">Categoría</label>
+                    <select id="category" name="category" required>
+                        <!-- Categories will be loaded dynamically -->
+                        <option value="clasicos">Clásicos</option>
+                        <option value="bocadillos">Bocadillos</option>
+                        <option value="dulce">Mesa Dulce</option>
+                        <option value="bebidas">Bebidas</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="image">URL de Imagen</label>
+                    <input type="url" id="image" name="image">
+                </div>
+                <div class="form-group">
+                    <label for="adminTags">Etiquetas</label>
+                    <select id="adminTags" name="tags" multiple style="height: 100px;">
+                        <option value="v">Vegetariano</option>
+                        <option value="vg">Vegano</option>
+                        <option value="gf">Sin gluten</option>
+                        <option value="s">Signature</option>
+                        <option value="nuevo">Nuevo</option>
+                    </select>
+                    <small>Mantén Ctrl presionado para seleccionar varias</small>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" name="featured" id="featured"> Destacado
+                    </label>
+                </div>
+                <button type="submit" class="btn-submit">Guardar Platillo</button>
+            </form>
+            <div id="adminStatus" class="status-msg"></div>
+            <button id="clearCustomDishes" style="margin-top: 1rem; background: none; border: none; color: #888; cursor: pointer; text-decoration: underline;">Limpiar formulario</button>
+        </section>
+
+        <!-- Product List -->
+        <section class="admin-card">
+            <h2>Inventario de Platillos</h2>
+            <ul id="adminProductList" class="product-list">
+                <!-- Products will be loaded here -->
+                <li class="product-item">Cargando platillos...</li>
+            </ul>
+        </section>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-init.js"></script>
+    <script src="auth.js"></script>
+    <script>
+        // Check if user is admin
+        window.auth.requireAdmin();
+
+        // This script will be mostly handled by Menu/JavaScript.js but we can add dashboard specific logic here
+        // or just let JavaScript.js take over if we include it.
+    </script>
+    <script src="JavaScript.js"></script>
+</body>
+</html>
