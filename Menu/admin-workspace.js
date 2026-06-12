@@ -4,7 +4,7 @@
 
 let allProducts = [];
 let allCategories = [];
-const systemTags = [
+let systemTags = [
     { id: "v", label: "Vegetariano" },
     { id: "vg", label: "Vegano" },
     { id: "gf", label: "Sin gluten" },
@@ -19,7 +19,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     await refreshData();
     setupEventListeners();
-    renderTags();
 
     // Initial preview load
     setTimeout(initPreview, 1000);
@@ -34,10 +33,31 @@ async function refreshData() {
     allProducts = prods.data || [];
     allCategories = cats.data || [];
 
+    // Load dynamic tags from a special product record if exists
+    const tagsRecord = allProducts.find(p => p.name === '___SYSTEM_TAGS___');
+    if (tagsRecord) {
+        try {
+            systemTags = JSON.parse(tagsRecord.description);
+        } catch (e) { console.error("Error parsing system tags", e); }
+    }
+
     renderCatalog();
     renderCategorySelect();
+    renderCategoryManager();
+    renderTagCloud();
+    renderTagManager();
 }
 
+// UI TABS
+window.switchPaneTab = (tab) => {
+    document.querySelectorAll('.pane-tab').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.pane-content').forEach(el => el.style.display = 'none');
+
+    document.getElementById(`tab-btn-${tab}`).classList.add('active');
+    document.getElementById(`tab-${tab}`).style.display = 'block';
+};
+
+// CATALOG RENDERING
 function renderCatalog() {
     const list = document.getElementById('admin-catalog-list');
     list.innerHTML = "";
@@ -48,10 +68,10 @@ function renderCatalog() {
 
         const catHeader = document.createElement('div');
         catHeader.className = 'cat-item';
-        catHeader.innerHTML = `<span>${cat.name}</span> <small style="color:#888">${allProducts.filter(p => p.category_id === cat.id).length}</small>`;
+        catHeader.innerHTML = `<span>${cat.name}</span> <small style="color:#888">${allProducts.filter(p => p.category_id === cat.id && p.name !== '___SYSTEM_TAGS___').length}</small>`;
         group.appendChild(catHeader);
 
-        allProducts.filter(p => p.category_id === cat.id).forEach(prod => {
+        allProducts.filter(p => p.category_id === cat.id && p.name !== '___SYSTEM_TAGS___').forEach(prod => {
             const pItem = document.createElement('div');
             pItem.className = 'product-item';
             if (prod.id === document.getElementById('dishId').value) pItem.classList.add('active');
@@ -72,7 +92,60 @@ function renderCategorySelect() {
     select.innerHTML = allCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
 }
 
-function renderTags() {
+// CATEGORY MANAGER
+function renderCategoryManager() {
+    const list = document.getElementById('category-manager-list');
+    list.innerHTML = allCategories.map(cat => `
+        <div class="cat-manager-item">
+            <span>${cat.name}</span>
+            <div style="display:flex; gap:0.5rem;">
+                <button class="btn btn-ghost" style="padding:0.2rem 0.5rem" onclick="openCategoryModal('${cat.id}', '${cat.name}')">✎</button>
+                <button class="btn btn-danger" style="padding:0.2rem 0.5rem" onclick="deleteCategory('${cat.id}', '${cat.name}')">×</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+window.openCategoryModal = (id = "", name = "") => {
+    document.getElementById('cat-modal-title').textContent = id ? "Editar Categoría" : "Nueva Categoría";
+    document.getElementById('new-cat-name').value = name;
+    document.getElementById('category-modal').dataset.editId = id;
+    document.getElementById('category-modal').classList.add('active');
+};
+
+window.saveCategory = async () => {
+    const name = document.getElementById('new-cat-name').value.trim();
+    const id = document.getElementById('category-modal').dataset.editId;
+    if (!name) return;
+
+    let res;
+    if (id) {
+        res = await window.supabaseClient.from('categories').update({ name }).eq('id', id);
+    } else {
+        res = await window.supabaseClient.from('categories').insert([{ name }]);
+    }
+
+    if (res.error) alert("Error: " + res.error.message);
+    else {
+        closeModals();
+        await refreshData();
+    }
+};
+
+window.deleteCategory = async (id, name) => {
+    const hasProducts = allProducts.some(p => p.category_id === id);
+    if (hasProducts) {
+        alert("No puedes borrar una categoría con platillos.");
+        return;
+    }
+    if (confirm(`¿Borrar categoría "${name}"?`)) {
+        await window.supabaseClient.from('categories').delete().eq('id', id);
+        await refreshData();
+    }
+};
+
+// TAGS
+function renderTagCloud() {
     const container = document.getElementById('tag-cloud');
     container.innerHTML = systemTags.map(tag => `
         <label style="cursor:pointer; display:flex; align-items:center; gap:0.3rem; padding:0.3rem 0.6rem; background:#eee; border-radius:15px; font-size:0.75rem;">
@@ -81,6 +154,66 @@ function renderTags() {
         </label>
     `).join('');
 }
+
+function renderTagManager() {
+    const list = document.getElementById('tag-manager-list');
+    list.innerHTML = systemTags.map(tag => `
+        <div class="tag-manager-item">
+            <span><strong>${tag.id}</strong>: ${tag.label}</span>
+            <button class="btn btn-danger" style="padding:0.2rem 0.5rem" onclick="deleteTag('${tag.id}')">×</button>
+        </div>
+    `).join('');
+}
+
+window.openTagModal = () => document.getElementById('tag-modal').classList.add('active');
+
+async function persistTags() {
+    const tagsRecord = allProducts.find(p => p.name === '___SYSTEM_TAGS___');
+    const payload = {
+        name: '___SYSTEM_TAGS___',
+        description: JSON.stringify(systemTags),
+        price: 0,
+        category_id: allCategories[0]?.id
+    };
+    if (tagsRecord) {
+        await window.supabaseClient.from('products').update(payload).eq('id', tagsRecord.id);
+    } else if (allCategories.length > 0) {
+        await window.supabaseClient.from('products').insert([payload]);
+    }
+}
+
+window.saveTag = async () => {
+    const id = document.getElementById('new-tag-id').value.trim().toLowerCase();
+    const label = document.getElementById('new-tag-label').value.trim();
+    if (!id || !label) return;
+    if (systemTags.some(t => t.id === id)) {
+        alert("ID de etiqueta ya existe.");
+        return;
+    }
+    systemTags.push({ id, label });
+    await persistTags();
+    closeModals();
+    renderTagCloud();
+    renderTagManager();
+};
+
+window.deleteTag = async (id) => {
+    systemTags = systemTags.filter(t => t.id !== id);
+    await persistTags();
+    renderTagCloud();
+    renderTagManager();
+};
+
+window.closeModals = () => {
+    document.querySelectorAll('.modal-overlay').forEach(el => el.classList.remove('active'));
+};
+
+// PRODUCT EDITOR
+window.toggleDrinkFields = () => {
+    const catSelect = document.getElementById('category');
+    const catName = catSelect.options[catSelect.selectedIndex]?.text.toLowerCase() || "";
+    document.getElementById('drink-type-field').style.display = catName.includes('bebida') ? 'block' : 'none';
+};
 
 function loadProduct(id) {
     const prod = allProducts.find(p => p.id === id);
@@ -95,12 +228,17 @@ function loadProduct(id) {
     document.getElementById('image').value = prod.image_url || "";
     document.getElementById('featured').checked = prod.featured;
 
+    toggleDrinkFields();
+
     // Description & Variants
     try {
         if (prod.description.startsWith('{')) {
             const data = JSON.parse(prod.description);
             document.getElementById('description').value = data.main_description || "";
             renderVariants(data.variants || []);
+            if (data.tipo_bebida) {
+                document.getElementById('drink-type').value = data.tipo_bebida;
+            }
         } else {
             document.getElementById('description').value = prod.description;
             renderVariants([]);
@@ -144,6 +282,7 @@ function resetEditor() {
     document.getElementById('product-form').reset();
     document.getElementById('dishId').value = "";
     document.getElementById('variants-list').innerHTML = "";
+    toggleDrinkFields();
     renderCatalog();
     updatePreview();
 }
@@ -172,6 +311,11 @@ async function saveProduct() {
     const description_text = document.getElementById('description').value;
     const image_url = document.getElementById('image').value;
     const featured = document.getElementById('featured').checked;
+    const drink_type = document.getElementById('drink-type').value;
+
+    const catSelect = document.getElementById('category');
+    const catName = catSelect.options[catSelect.selectedIndex]?.text.toLowerCase() || "";
+    const isDrink = catName.includes('bebida');
 
     // Collect tags
     const tags = Array.from(document.querySelectorAll('input[name="tags"]:checked')).map(cb => cb.value);
@@ -183,14 +327,14 @@ async function saveProduct() {
         return { name: inputs[0].value, price: Number(inputs[1].value) };
     }).filter(v => v.name && v.price);
 
-    // Prepare description (JSON if variants exist)
-    let description = description_text;
-    if (variants.length > 0) {
-        description = JSON.stringify({
-            main_description: description_text,
-            variants: variants
-        });
-    }
+    // Prepare description (JSON)
+    const descObj = {
+        main_description: description_text,
+        variants: variants
+    };
+    if (isDrink) descObj.tipo_bebida = drink_type;
+
+    const description = JSON.stringify(descObj);
 
     const payload = { name, price, category_id, description, image_url, featured, tags };
 
@@ -229,13 +373,13 @@ function updatePreview() {
     const iframe = document.getElementById('preview-iframe');
     if (!iframe || !iframe.contentWindow) return;
 
-    // Collect current form data for a "virtual" product
     const name = document.getElementById('name').value || "Nombre del Platillo";
     const price = Number(document.getElementById('price').value) || 0;
     const description_text = document.getElementById('description').value || "Descripción breve...";
-    const image_url = document.getElementById('image').value || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80";
+    const image_url = document.getElementById('image').value || "";
     const featured = document.getElementById('featured').checked;
     const tags = Array.from(document.querySelectorAll('input[name="tags"]:checked')).map(cb => cb.value);
+    const drink_type = document.getElementById('drink-type').value;
 
     const variantRows = document.querySelectorAll('.variant-row');
     const variants = Array.from(variantRows).map(row => {
@@ -243,56 +387,30 @@ function updatePreview() {
         return { name: inputs[0].value, price: Number(inputs[1].value) };
     }).filter(v => v.name && v.price);
 
-    let description = description_text;
-    if (variants.length > 0) {
-        description = JSON.stringify({ main_description: description_text, variants });
-    }
+    const catSelect = document.getElementById('category');
+    const catName = catSelect.options[catSelect.selectedIndex]?.text.toLowerCase() || "";
+    const isDrink = catName.includes('bebida');
+
+    const descObj = { main_description: description_text, variants };
+    if (isDrink) descObj.tipo_bebida = drink_type;
 
     const virtualProduct = {
         id: 'preview-id',
         name,
         price,
-        description,
+        description: JSON.stringify(descObj),
         image_url,
         featured,
         tags,
         category_id: document.getElementById('category').value
     };
 
-    // Send to iframe
     iframe.contentWindow.postMessage({ type: 'PREVIEW_UPDATE', product: virtualProduct }, '*');
 }
 
 window.refreshPreview = () => {
     initPreview();
     setTimeout(updatePreview, 1000);
-};
-
-window.openCategoryModal = () => {
-    const name = prompt("Nombre de la nueva categoría:");
-    if (name) {
-        window.supabaseClient.from('categories').insert([{ name }]).then(refreshData);
-    }
-};
-
-window.manageCategories = () => {
-    const message = allCategories.map((c, i) => `${i + 1}. ${c.name}`).join('\n');
-    const choice = prompt(`Categorías existentes:\n${message}\n\nEscribe el número de la categoría que quieres BORRAR (o cancela):`);
-
-    if (choice) {
-        const idx = parseInt(choice) - 1;
-        if (allCategories[idx]) {
-            const cat = allCategories[idx];
-            const hasProducts = allProducts.some(p => p.category_id === cat.id);
-            if (hasProducts) {
-                alert("No puedes borrar una categoría que tiene platillos. Mueve o borra los platillos primero.");
-                return;
-            }
-            if (confirm(`¿Borrar categoría "${cat.name}"?`)) {
-                window.supabaseClient.from('categories').delete().eq('id', cat.id).then(refreshData);
-            }
-        }
-    }
 };
 
 window.updatePreviewMode = (val) => {
