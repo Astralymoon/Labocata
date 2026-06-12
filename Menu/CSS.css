@@ -2022,3 +2022,68 @@ footer { background: var(--espresso); padding: var(--sp-6) var(--page-pad) var(-
   .order-footer { padding: 20px 18px 24px; }
   .order-input-row { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   ADMIN WORKSPACE ADDITIONS
+   ============================================================ */
+
+/* Hide nav and other distractions in preview mode */
+body.is-preview #nav,
+body.is-preview footer,
+body.is-preview .admin-entry,
+body.is-preview .order-fab,
+body.is-preview .promo-band {
+  display: none !important;
+}
+
+body.is-preview .menu-hero {
+  height: 400px;
+}
+
+body.is-preview .menu-body {
+  padding-top: 2rem;
+}
+
+/* Variant buttons in menu items */
+.item-variants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  margin-bottom: 15px;
+}
+
+.variant-btn {
+  background: var(--cream);
+  border: 1px solid rgba(155,111,62,0.2);
+  color: var(--warm-grey);
+  padding: 5px 10px;
+  font-family: "Syne", sans-serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all var(--t-fast) var(--ease);
+}
+
+.variant-btn:hover {
+  background: var(--ivory-dim);
+  color: var(--espresso);
+}
+
+.variant-btn.active {
+  background: var(--espresso);
+  color: var(--gold);
+  border-color: var(--espresso);
+  box-shadow: var(--shadow-xs);
+}
+
+/* Fix for featured items in mobile preview */
+@media (max-width: 480px) {
+  .menu-item.featured {
+    grid-template-columns: 1fr;
+  }
+  .menu-item.featured .item-photo {
+    height: 200px;
+  }
+}

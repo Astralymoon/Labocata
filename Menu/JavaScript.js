@@ -110,11 +110,9 @@ function escapeHtml(value = "") {
 }
 
 
-async function readCustomDishes() {
+async function fetchProducts() {
   try {
-    const { data, error } = await window.supabaseClient
-      .from('products')
-      .select('*');
+    const { data, error } = await window.supabaseClient.from('products').select('*');
     if (error) throw error;
     return data || [];
   } catch (e) {
@@ -123,31 +121,17 @@ async function readCustomDishes() {
   }
 }
 
-async function readMenuCatalog(type, defaults) {
-  // type is expected to be 'categories' or 'tags'
-  // For categories, we fetch from 'categories' table
-  if (type === 'categories') {
-    try {
-      const { data, error } = await window.supabaseClient
-        .from('categories')
-        .select('*');
-      if (error) throw error;
-      // Merge with defaults if necessary or just return data
-      const merged = [...defaults];
-      (data || []).forEach((item) => {
-        if (!merged.some((existing) => existing.id === item.id)) merged.push({id: item.id, label: item.name});
-      });
-      return merged;
-    } catch (e) {
-      console.error("Error fetching categories:", e);
-      return defaults;
-    }
+async function fetchCategories() {
+  try {
+    const { data, error } = await window.supabaseClient.from('categories').select('*').order('created_at', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  } catch (e) {
+    console.error("Error fetching categories:", e);
+    return [];
   }
-  // For tags, we might still use defaults or a 'tags' table if added.
-  return defaults;
 }
 
-// Tags are not yet migrated to Supabase tables, keeping them as defaults
 function getTagLabels() {
   return defaultMenuTags.reduce((map, tag) => {
     map[tag.id] = tag.label;
@@ -155,185 +139,223 @@ function getTagLabels() {
   }, {});
 }
 
-function ensureCustomCategorySection(category) {
-  if (!category || category.id === "bebidas" || document.querySelector(`.menu-grid[data-cat="${category.id}"]`)) return;
-
-  const menuBody = document.getElementById("menuBody");
-  if (!menuBody) return;
-
-  const header = document.createElement("div");
-  header.className = "cat-header reveal visible admin-added-section";
-  header.dataset.cat = category.id;
-  header.innerHTML = `
-    <div>
-      <span class="cat-num">Admin — ${escapeHtml(category.label)}</span>
-      <h2 class="cat-title">${escapeHtml(category.label)}</h2>
-    </div>
-    <p class="cat-desc">Platillos agregados desde el panel administrativo.</p>
-  `;
-
-  const grid = document.createElement("div");
-  grid.className = "menu-grid admin-added-section";
-  grid.dataset.cat = category.id;
-
-  menuBody.append(header, grid);
-}
-
-async function setupDynamicMenuCatalogs() {
-  const categories = await readMenuCatalog('categories', defaultMenuCategories);
-  categories.forEach(ensureCustomCategorySection);
-
-  const filterInner = document.querySelector(".filter-inner");
-  if (!filterInner) return;
-
-  categories.forEach((category) => {
-    if (category.id === "bebidas" || filterInner.querySelector(`[data-filter="${category.id}"]`)) return;
-    const divider = document.createElement("div");
-    divider.className = "filter-divider admin-added-filter";
-    const button = document.createElement("button");
-    button.className = "filter-btn admin-added-filter";
-    button.dataset.filter = category.id;
-    button.type = "button";
-    button.textContent = category.label;
-    button.addEventListener("click", () => applyMenuFilter(button));
-    const dietary = filterInner.querySelector(".filter-dietary");
-    filterInner.insertBefore(divider, dietary);
-    filterInner.insertBefore(button, dietary);
-  });
-  filterBtns = document.querySelectorAll(".filter-btn");
-  catHeaders = document.querySelectorAll(".cat-header:not(.bebidas-subheader)");
-  menuGrids = document.querySelectorAll(".menu-grid:not(.bebidas-grid)");
-}
-
-function getCategoryGrid(dish) {
-  const category = typeof dish === "string" ? dish : dish.category_id;
-  if (category === "bebidas") {
-    const sub = (typeof dish === "object" && dish.drinkSubcat) ? dish.drinkSubcat : "caliente";
-    return document.querySelector(`.bebidas-grid[data-drink-cat="${sub}"]`);
-  }
-  return document.querySelector(`.menu-grid[data-cat="${category}"]`);
-}
-
-function getSelectedOptions(select) {
-  return Array.from(select.selectedOptions || []).map((option) => option.value);
-}
-
-function renderTagSpans(tags = [], customTags = []) {
+function renderTagSpans(tags = []) {
   const tagLabels = getTagLabels();
-  const systemTags = tags
-    .filter((tag) => tagLabels[tag])
+  return (tags || [])
     .map((tag) => {
+      const label = tagLabels[tag] || tag;
       const className = defaultMenuTags.some((item) => item.id === tag) ? tag : "custom";
-      return `<span class="item-tag ${className}">${escapeHtml(tagLabels[tag])}</span>`;
+      return `<span class="item-tag ${className}">${escapeHtml(label)}</span>`;
     })
     .join("");
-  const extraTags = customTags
-    .map((tag) => `<span class="item-tag custom">${escapeHtml(tag)}</span>`)
-    .join("");
-  return systemTags + extraTags;
 }
 
-function getDishRenderStyle(dish) {
-  if (dish.style && dish.style !== "auto") return dish.style;
-  if (dish.featured && dish.image) return "featured";
-  if (dish.image) return "photo";
-  return "text";
+function parseVariants(description) {
+  try {
+    if (description.startsWith('{')) {
+      const data = JSON.parse(description);
+      return {
+        desc: data.main_description || "",
+        variants: data.variants || []
+      };
+    }
+  } catch (e) {}
+  return { desc: description, variants: [] };
 }
 
-function getOrderButtonData(btn) {
-  if (btn.dataset.orderName && btn.dataset.qtyId) {
-    return {
-      name: normalizeItemName(btn.dataset.orderName),
-      price: Number(btn.dataset.orderPrice),
-      qtyId: btn.dataset.qtyId
-    };
+function renderProductCard(product) {
+  const { desc, variants } = parseVariants(product.description);
+  const qtyId = `qty-prod-${product.id}`;
+  const hasImage = Boolean(product.image_url);
+  const isFeatured = product.featured;
+
+  const card = document.createElement("div");
+  card.className = `menu-item ${isFeatured ? 'featured' : (hasImage ? 'has-photo' : 'text-card')}`;
+  card.dataset.cat = product.category_id;
+  if (product.tags && product.tags.includes('vg')) card.dataset.diet = 'vegano';
+
+  let variantHtml = "";
+  if (variants.length > 0) {
+    variantHtml = `<div class="item-variants">` + variants.map((v, i) => `
+      <button class="variant-btn ${i===0?'active':''}" onclick="selectVariant(this, '${escapeHtml(v.name)}', ${v.price})">${escapeHtml(v.name)} ($${v.price})</button>
+    `).join("") + `</div>`;
   }
 
-  const attr = btn.getAttribute("onclick") || "";
-  const args = attr.match(/addToOrder\(this,\s*'([^']+)',\s*(\d+),\s*'(qty-[^']+)'\)/);
-  if (!args) return null;
-
-  return {
-    name: normalizeItemName(args[1]),
-    price: Number(args[2]),
-    qtyId: args[3]
-  };
-}
-
-function wireOrderButton(card, dish, qtyId) {
-  const btn = card.querySelector(".add-btn");
-  if (!btn) return;
-
-  btn.dataset.orderName = dish.name;
-  btn.dataset.orderPrice = String(dish.price);
-  btn.dataset.qtyId = qtyId;
-  btn.addEventListener("click", () => addToOrder(btn, dish.name, dish.price, qtyId));
-}
-
-function renderCustomDish(dish) {
-  const grid = getCategoryGrid(dish);
-  if (!grid) return;
-
-  const qtyId = `qty-admin-${dish.id}`;
-  const card = document.createElement("div");
-  const hasImage = Boolean(dish.image);
-  const style = getDishRenderStyle(dish);
-  const isFeatured = style === "featured";
-  const usePhoto = hasImage && style !== "text";
-  card.className = `menu-item admin-added${isFeatured && usePhoto ? " featured" : usePhoto ? " has-photo" : " text-card"}`;
-  card.dataset.cat = dish.category_id;
-  if (dish.category_id === "bebidas" && dish.drinkSubcat) card.dataset.drink = dish.drinkSubcat;
-
-  if (isFeatured && usePhoto) {
-    card.innerHTML = `
-      <div class="item-photo"><img src="${escapeHtml(dish.image_url)}" alt="${escapeHtml(dish.name)}" loading="lazy" /></div>
-      <div class="item-body">
-        <span class="featured-badge">Nuevo en admin</span>
-        <div class="item-header">
-          <h3 class="item-name">${escapeHtml(dish.name)}</h3>
-          <span class="item-price">$${Number(dish.price).toLocaleString("es-MX")}</span>
-        </div>
-        <p class="item-desc">${escapeHtml(dish.description)}</p>
-        <div class="item-footer">
-          <div class="item-tags">${renderTagSpans(dish.tags, dish.customTags)}</div>
-          <div class="qty-ctrl" id="${qtyId}"></div>
-          <button class="add-btn" type="button">
-            <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-            Agregar
-          </button>
-        </div>
-      </div>
-    `;
-  } else {
-    card.innerHTML = `
-      ${hasImage ? `<div class="item-photo"><img src="${escapeHtml(dish.image_url)}" alt="${escapeHtml(dish.name)}" loading="lazy" /></div><div class="item-body">` : ""}
+  const innerContent = `
+    ${hasImage ? `<div class="item-photo"><img src="${escapeHtml(product.image_url)}" alt="${escapeHtml(product.name)}" loading="lazy" /></div>` : ""}
+    <div class="item-body">
+      ${isFeatured ? '<span class="featured-badge">✦ &nbsp;Recomendado</span>' : ''}
       <div class="item-header">
-        <h3 class="item-name">${escapeHtml(dish.name)}</h3>
-        <span class="item-price">$${Number(dish.price).toLocaleString("es-MX")}</span>
+        <h3 class="item-name">${escapeHtml(product.name)}</h3>
+        <span class="item-price" id="price-${product.id}">$${Number(product.price).toLocaleString("es-MX")}</span>
       </div>
-      <p class="item-desc">${escapeHtml(dish.description)}</p>
+      <p class="item-desc">${escapeHtml(desc)}</p>
+      ${variantHtml}
       <div class="item-footer">
-        <div class="item-tags">${renderTagSpans(dish.tags, dish.customTags)}</div>
+        <div class="item-tags">${renderTagSpans(product.tags)}</div>
         <div class="qty-ctrl" id="${qtyId}"></div>
-        <button class="add-btn" type="button">
+        <button class="add-btn" type="button" id="add-btn-${product.id}" onclick="addToOrder(this, '${escapeHtml(product.name)}', ${product.price}, '${qtyId}')">
           <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
           Agregar
         </button>
       </div>
-      ${hasImage ? "</div>" : ""}
-    `;
-  }
+    </div>
+  `;
 
-  wireOrderButton(card, dish, qtyId);
-  grid.appendChild(card);
-  prepareCardAnimation(card);
-  if (orderItems[dish.name]) syncInlineControlForItem(dish.name);
+  card.innerHTML = innerContent;
+  return card;
 }
 
-async function renderCustomDishes() {
-  document.querySelectorAll(".admin-added").forEach((card) => card.remove());
-  const dishes = await readCustomDishes();
-  dishes.forEach(renderCustomDish);
+window.selectVariant = (btn, name, price) => {
+  const container = btn.closest('.item-variants');
+  container.querySelectorAll('.variant-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const card = btn.closest('.menu-item');
+  const priceEl = card.querySelector('.item-price');
+  priceEl.textContent = `$${Number(price).toLocaleString("es-MX")}`;
+
+  const addBtn = card.querySelector('.add-btn');
+  const originalName = addBtn.getAttribute('onclick').match(/'([^']+)'/)[1];
+  const qtyId = addBtn.getAttribute('onclick').match(/'(qty-[^']+)'/)[1];
+
+  const fullName = `${originalName} (${name})`;
+  addBtn.onclick = () => addToOrder(addBtn, fullName, price, qtyId);
+};
+
+async function renderMenu() {
+  const container = document.getElementById("menu-categories-container");
+  const bebidasGrids = document.getElementById("bebidasGrids");
+  if (!container) return;
+
+  container.innerHTML = "";
+  if (bebidasGrids) bebidasGrids.innerHTML = "";
+
+  const [categories, products] = await Promise.all([fetchCategories(), fetchProducts()]);
+
+  // Update Filter Nav
+  const filterInner = document.querySelector(".filter-inner");
+  if (filterInner) {
+    filterInner.querySelectorAll(".admin-added-filter").forEach(el => el.remove());
+    const dietary = filterInner.querySelector(".filter-dietary");
+    categories.forEach((cat, index) => {
+      if (cat.name.toLowerCase() === 'bebidas') return;
+      const btn = document.createElement("button");
+      btn.className = "filter-btn admin-added-filter";
+      btn.dataset.filter = cat.id;
+      btn.textContent = cat.name;
+      btn.onclick = () => applyMenuFilter(btn);
+      filterInner.insertBefore(btn, dietary);
+      if (index < categories.length - 1) {
+        const div = document.createElement("div");
+        div.className = "filter-divider admin-added-filter";
+        filterInner.insertBefore(div, dietary);
+      }
+    });
+  }
+
+  categories.forEach((cat, idx) => {
+    const isBebidas = cat.name.toLowerCase() === 'bebidas';
+    const catProducts = products.filter(p => p.category_id === cat.id);
+
+    if (isBebidas) {
+      if (!bebidasGrids) return;
+      // Handle subcategories for drinks if necessary, for now just one grid
+      const subheader = document.createElement("div");
+      subheader.className = "cat-header bebidas-subheader reveal";
+      subheader.innerHTML = `<div><span class="cat-num">0${idx+1} — ${escapeHtml(cat.name)}</span><h2 class="cat-title">${escapeHtml(cat.name)}</h2></div>`;
+      bebidasGrids.appendChild(subheader);
+
+      const grid = document.createElement("div");
+      grid.className = "menu-grid bebidas-grid";
+      catProducts.forEach(p => grid.appendChild(renderProductCard(p)));
+      bebidasGrids.appendChild(grid);
+    } else {
+      const header = document.createElement("div");
+      header.className = "cat-header reveal";
+      header.dataset.cat = cat.id;
+      header.innerHTML = `
+        <div>
+          <span class="cat-num">0${idx+1} — ${escapeHtml(cat.name)}</span>
+          <h2 class="cat-title">${escapeHtml(cat.name)}</h2>
+        </div>
+      `;
+      const grid = document.createElement("div");
+      grid.className = "menu-grid";
+      grid.dataset.cat = cat.id;
+      catProducts.forEach(p => grid.appendChild(renderProductCard(p)));
+
+      container.appendChild(header);
+      container.appendChild(grid);
+    }
+  });
+
+  // Spotlight (Dish of the Day)
+  const spotlightSection = document.querySelector(".menu-spotlight");
+  const spotlightProd = products.find(p => p.featured && p.category_id !== categories.find(c => c.name.toLowerCase()==='bebidas')?.id);
+
+  if (spotlightProd && spotlightSection) {
+    spotlightSection.style.display = "grid";
+    const { desc } = parseVariants(spotlightProd.description);
+    const spotlightTitle = document.getElementById("spotlightTitle");
+    const spotlightDesc = document.getElementById("spotlightDescription");
+    const spotlightTotal = document.getElementById("spotlightTotal");
+    const spotlightImg1 = document.getElementById("spotlightImageOne");
+
+    if (spotlightTitle) spotlightTitle.textContent = spotlightProd.name;
+    if (spotlightDesc) spotlightDesc.textContent = desc;
+    if (spotlightTotal) spotlightTotal.textContent = `$${Number(spotlightProd.price).toLocaleString("es-MX")}`;
+    if (spotlightImg1 && spotlightProd.image_url) spotlightImg1.src = spotlightProd.image_url;
+  } else if (spotlightSection) {
+    spotlightSection.style.display = "none";
+  }
+
+  // Refresh references
+  filterBtns = document.querySelectorAll(".filter-btn");
+  catHeaders = document.querySelectorAll(".cat-header");
+  menuGrids = document.querySelectorAll(".menu-grid");
+
+  document.querySelectorAll(".menu-item").forEach(prepareCardAnimation);
+  revealEls.forEach((el) => revealObs.observe(el));
+}
+
+// ===== PREVIEW MESSAGE LISTENER =====
+window.addEventListener('message', (event) => {
+  if (event.data.type === 'PREVIEW_UPDATE') {
+    const product = event.data.product;
+    renderLivePreviewItem(product);
+  }
+});
+
+function renderLivePreviewItem(product) {
+  // Find or create a preview container at the top of the menu
+  let previewSection = document.getElementById('admin-live-preview-section');
+  if (!previewSection) {
+    previewSection = document.createElement('section');
+    previewSection.id = 'admin-live-preview-section';
+    previewSection.style.padding = "2rem";
+    previewSection.style.background = "#fff3cd";
+    previewSection.style.borderBottom = "2px solid #ffeeba";
+    previewSection.innerHTML = `
+      <div style="text-align:center; margin-bottom:1rem; font-size:0.7rem; font-weight:800; color:#856404; text-transform:uppercase; letter-spacing:1px;">
+        Preview en vivo (Editando)
+      </div>
+      <div id="preview-item-container" class="menu-grid" style="grid-template-columns: 1fr; max-width: 400px; margin: 0 auto;"></div>
+    `;
+    document.body.prepend(previewSection);
+  }
+
+  const container = document.getElementById('preview-item-container');
+  container.innerHTML = "";
+  const card = renderProductCard(product);
+  container.appendChild(card);
+
+  // Force visible
+  card.style.opacity = "1";
+  card.style.transform = "none";
+
+  // Scroll to it
+  previewSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function setupAdminPanel() {
@@ -1083,8 +1105,12 @@ document.addEventListener("keydown", (e) => {
 
 // MEJORA: cargar carrito guardado al iniciar
 document.addEventListener("DOMContentLoaded", async () => {
-  await setupDynamicMenuCatalogs();
-  await renderCustomDishes();
+  // Check if we are in an iframe (preview mode)
+  if (window.self !== window.top) {
+    document.body.classList.add('is-preview');
+  }
+
+  await renderMenu();
   setupAdminPanel();
   loadCartFromStorage();
   renderLastOrder();
