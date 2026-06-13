@@ -1183,12 +1183,29 @@ nav.scrolled .cart-count-badge { background: var(--gold); color: var(--espresso)
 .item-name em { font-style: italic; }
 
 /* item-price — VISIBLE */
+.price-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.old-price {
+  font-family: "Syne", sans-serif;
+  font-size: 0.75rem;
+  text-decoration: line-through;
+  color: var(--warm-grey);
+  opacity: 0.7;
+  margin-bottom: -2px;
+}
 .item-price {
   font-family: "Syne", sans-serif;
   font-size: 1rem; font-weight: 700;
   letter-spacing: 0.02em;
   color: var(--espresso);
   white-space: nowrap; padding-top: 2px;
+}
+.item-price.special {
+  color: var(--bronze);
+  font-size: 1.1rem;
 }
 
 .item-header {
