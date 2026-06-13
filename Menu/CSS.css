@@ -1937,22 +1937,16 @@ footer { background: var(--espresso); padding: var(--sp-6) var(--page-pad) var(-
 
 /* ── ANIMATIONS ── */
 .reveal {
-  opacity: 0; transform: translateY(22px);
-  transition: opacity 0.8s var(--ease), transform 0.8s var(--ease);
+  opacity: 0;
+  transform: translateY(40px);
+  transition:
+    opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
-.reveal.visible { opacity: 1; transform: none; }
+.reveal.visible { opacity: 1; transform: translateY(0); }
 .reveal-delay-1 { transition-delay: 0.1s; }
 .reveal-delay-2 { transition-delay: 0.22s; }
 
-/* Entry animation for menu items (staggered) */
-@keyframes itemAppear {
-  from { opacity: 0; transform: translateY(30px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.menu-item.is-visible {
-  animation: itemAppear 0.6s var(--ease-spring) forwards;
-}
 
 /* ══════════════════════════════════════════
    RESPONSIVE

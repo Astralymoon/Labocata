@@ -159,14 +159,14 @@ function renderProductCard(product) {
   const isFeatured = product.featured;
 
   // Determine actual style
-  let styleClass = "text-card";
-  if (visual_style === "featured") styleClass = "featured";
-  else if (visual_style === "photo") styleClass = "has-photo";
-  else if (visual_style === "text") styleClass = "text-card";
+  let styleClass = "reveal text-card";
+  if (visual_style === "featured") styleClass = "reveal featured";
+  else if (visual_style === "photo") styleClass = "reveal has-photo";
+  else if (visual_style === "text") styleClass = "reveal text-card";
   else {
     // Auto
-    if (isFeatured) styleClass = "featured";
-    else if (hasImage) styleClass = "has-photo";
+    if (isFeatured) styleClass = "reveal featured";
+    else if (hasImage) styleClass = "reveal has-photo";
   }
 
   const card = document.createElement("div");
@@ -416,43 +416,30 @@ async function renderMenu() {
   filterBtns = document.querySelectorAll(".filter-btn");
   catHeaders = document.querySelectorAll(".cat-header");
   menuGrids = document.querySelectorAll(".menu-grid");
-  document.querySelectorAll(".menu-item").forEach(prepareCardAnimation);
   document.querySelectorAll(".reveal").forEach(el => revealObs.observe(el));
 }
 
 // ===== PREVIEW MESSAGE LISTENER =====
 window.addEventListener('message', (event) => {
-  if (event.data.type === 'PREVIEW_UPDATE') renderLivePreviewItem(event.data.product);
+  if (event.data.type === 'PREVIEW_UPDATE') updateItemInPlace(event.data.product);
 });
 
-function renderLivePreviewItem(product) {
-  let previewSection = document.getElementById('admin-live-preview-section');
-  if (!previewSection) {
-    previewSection = document.createElement('section');
-    previewSection.id = 'admin-live-preview-section';
-    previewSection.style.padding = "2rem";
-    previewSection.style.background = "linear-gradient(135deg, #fff3cd 0%, #fcf8e3 100%)";
-    previewSection.style.borderBottom = "2px solid #ffeeba";
-    previewSection.style.position = "relative";
-    previewSection.style.zIndex = "1000";
-    previewSection.innerHTML = `
-      <div style="text-align:center; font-family:'Syne',sans-serif; font-size:0.6rem; font-weight:800; color:#856404; text-transform:uppercase; letter-spacing:0.2em; margin-bottom:1.5rem;">
-        ✦ Editando ahora
-      </div>
-      <div id="preview-item-container" class="menu-grid" style="grid-template-columns: repeat(2, 1fr); max-width:900px; margin:0 auto; box-shadow: 0 20px 40px rgba(0,0,0,0.1);"></div>
-    `;
-    document.body.prepend(previewSection);
-  }
-  const container = document.getElementById('preview-item-container');
-  container.innerHTML = "";
-  const card = renderProductCard(product);
-  container.appendChild(card);
+function updateItemInPlace(product) {
+  const existing = document.getElementById(`prod-${product.id}`);
+  if (!existing) return;
 
-  card.style.opacity = "1";
-  card.style.transform = "none";
-  card.classList.add('visible');
+  const newCard = renderProductCard(product);
 
-  previewSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Force visibility for previewer immediately
+  newCard.classList.add('visible');
+  newCard.style.transition = "none";
+  newCard.style.opacity = "1";
+  newCard.style.transform = "translateY(0)";
+
+  existing.replaceWith(newCard);
+
+  // Do NOT auto-scroll. User said "it shows up top".
+  // It should just update where it is in the menu.
 }
 
 // ===== SOUND EFFECTS =====
@@ -674,20 +661,7 @@ window.setOrderType = (type) => {
 };
 
 // ===== ANIMATIONS =====
-const revealObs = new IntersectionObserver(entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add("visible"); }), { threshold: 0.1 });
-const cardObs = new IntersectionObserver(entries => entries.forEach((e, i) => {
-  if (e.isIntersecting) {
-    // Add staggered delay based on position
-    const delay = (i % 4) * 0.08;
-    e.target.style.animationDelay = `${delay}s`;
-    e.target.classList.add("is-visible");
-    cardObs.unobserve(e.target);
-  }
-}), { threshold: 0.05 });
-function prepareCardAnimation(el) {
-  el.classList.remove("is-visible"); // Reset for re-animation if needed
-  cardObs.observe(el);
-}
+const revealObs = new IntersectionObserver(entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add("visible"); }), { threshold: 0.15 });
 
 document.addEventListener("DOMContentLoaded", async () => {
   if (window.self !== window.top) document.body.classList.add('is-preview');
