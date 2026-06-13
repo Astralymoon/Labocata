@@ -78,10 +78,23 @@ async function refreshData() {
 
 // UI TABS
 window.switchPaneTab = (tab) => {
-    document.querySelectorAll('.pane-tab').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.pane-content').forEach(el => el.style.display = 'none');
-    document.getElementById(`tab-btn-${tab}`).classList.add('active');
-    document.getElementById(`tab-${tab}`).style.display = 'flex';
+    const tabs = document.querySelectorAll('.pane-tab');
+    const contents = document.querySelectorAll('.pane-content');
+
+    tabs.forEach(t => t.classList.remove('active'));
+    contents.forEach(c => {
+        c.style.display = 'none';
+        c.classList.remove('active');
+    });
+
+    const targetTab = document.getElementById(`tab-btn-${tab}`);
+    const targetContent = document.getElementById(`tab-${tab}`);
+
+    if (targetTab) targetTab.classList.add('active');
+    if (targetContent) {
+        targetContent.style.display = 'flex';
+        targetContent.classList.add('active');
+    }
 };
 
 // CATALOG RENDERING
