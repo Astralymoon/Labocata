@@ -2,19 +2,27 @@ const ZIP_MENU_DATA = {
   "categories": [
     {
       "id_extracted": "clasicos",
-      "name": "Los que nunca fallan."
+      "name": "Los que nunca fallan.",
+      "html_name": "Los que <em>nunca</em><br/>fallan.",
+      "description": "Los platillos que definen a Labocata. Recetas depuradas con el tiempo."
     },
     {
       "id_extracted": "bocadillos",
-      "name": "Para compartir."
+      "name": "Para compartir.",
+      "html_name": "Para <em>compartir.</em>",
+      "description": "Porciones para la mesa, el café largo y la buena compañía."
     },
     {
       "id_extracted": "dulce",
-      "name": "El cierre perfecto."
+      "name": "El cierre perfecto.",
+      "html_name": "El <em>cierre</em><br/>perfecto.",
+      "description": "Del horno al plato, cada mañana nuestra repostera trabaja para que valga."
     },
     {
       "id_extracted": "bebidas",
-      "name": "Bebidas"
+      "name": "Bebidas",
+      "html_name": "Para <em>despertar.</em>",
+      "description": "Café de especialidad, jugos naturales y licuados."
     }
   ],
   "products": [
@@ -30,7 +38,7 @@ const ZIP_MENU_DATA = {
         "nuevo"
       ],
       "visual_style": "featured",
-      "featured_text": "✦  La estrella de la casa"
+      "featured_text": "La estrella de la casa"
     },
     {
       "name": "Avocado <em>Toast</em>",
@@ -164,7 +172,7 @@ const ZIP_MENU_DATA = {
         "s"
       ],
       "visual_style": "featured",
-      "featured_text": "✦  Para compartir"
+      "featured_text": "Para compartir"
     },
     {
       "name": "Cheese <em>Board</em>",
@@ -342,7 +350,7 @@ const ZIP_MENU_DATA = {
         "s"
       ],
       "visual_style": "featured",
-      "featured_text": "✦  El favorito del domingo"
+      "featured_text": "El favorito del domingo"
     },
     {
       "name": "Croissant <em>de Mantequilla</em>",
@@ -533,70 +541,95 @@ const ZIP_MENU_DATA = {
 };
 
 
+const slugify = text =>
+  text
+    .toString()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w-]+/g, '')
+    .replace(/--+/g, '-');
+
 async function importZipMenu() {
-    if (!confirm("¿Seguro que quieres importar el menú del ZIP? Esto agregará o actualizará platillos y categorías.")) return;
+    if (!confirm("¿Seguro que quieres importar el menú del ZIP? Esto optimizará y cargará los 40 platillos.")) return;
 
     const statusEl = document.createElement('div');
-    statusEl.style.position = 'fixed';
-    statusEl.style.top = '20px';
-    statusEl.style.right = '20px';
-    statusEl.style.padding = '1rem';
-    statusEl.style.background = '#000';
-    statusEl.style.color = '#fff';
-    statusEl.style.zIndex = '9999';
-    statusEl.textContent = 'Iniciando importación...';
+    Object.assign(statusEl.style, {
+        position: 'fixed', top: '20px', right: '20px', padding: '1.5rem',
+        background: '#120c06', color: '#c9a96e', zIndex: '9999',
+        border: '1px solid #c9a96e', fontFamily: 'Syne, sans-serif', fontSize: '0.8rem',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.5)', minWidth: '250px'
+    });
+    statusEl.innerHTML = '<div style="margin-bottom:10px; font-weight:800; border-bottom:1px solid #333; padding-bottom:5px;">MIGRACIÓN EN CURSO</div><div id="import-msg">Iniciando...</div>';
     document.body.appendChild(statusEl);
+    const msgEl = statusEl.querySelector('#import-msg');
 
     try {
         const catMap = {};
+        const catMetadata = {};
         const categories = ZIP_MENU_DATA.categories;
         const products = ZIP_MENU_DATA.products;
 
+        msgEl.textContent = 'Sincronizando categorías...';
         for (const cat of categories) {
-            statusEl.textContent = `Procesando categoría: ${cat.name}`;
+            msgEl.textContent = `Procesando categoría: ${cat.name}`;
             const { data: existing } = await window.supabaseClient.from('categories').select('id').eq('name', cat.name);
+            let catId;
             if (existing && existing.length > 0) {
-                catMap[cat.id_extracted] = existing[0].id;
+                catId = existing[0].id;
+                await window.supabaseClient.from('categories').update({ slug: slugify(cat.name) }).eq('id', catId);
             } else {
-                const { data: newCat, error } = await window.supabaseClient.from('categories').insert([{ name: cat.name }]).select();
-                if (error) throw error;
-                catMap[cat.id_extracted] = newCat[0].id;
+                const { data: newCat, error: insertError } = await window.supabaseClient.from('categories').insert([{
+                    name: cat.name,
+                    slug: slugify(cat.name)
+                }]).select();
+                if (insertError) throw insertError;
+                catId = newCat[0].id;
             }
+            catMap[cat.id_extracted] = catId;
+            catMetadata[catId] = { title: cat.html_name, description: cat.description };
+            await new Promise(r => setTimeout(r, 100));
         }
 
-        for (const prod of products) {
-            statusEl.textContent = `Procesando platillo: ${prod.name.replace(/<[^>]*>/g, '')}`;
-            const { data: existing } = await window.supabaseClient.from('products').select('id').eq('name', prod.name);
+        msgEl.textContent = 'Preparando platillos...';
+        const chunkSize = 5;
+        for (let i = 0; i < products.length; i += chunkSize) {
+            const chunk = products.slice(i, i + chunkSize);
+            msgEl.textContent = `Subiendo platillos (${i + chunk.length} de ${products.length})...`;
 
-            const descObj = {
-                main_description: prod.description_text,
-                variants: [],
-                special_price: null,
-                tags: prod.tags,
-                visual_style: prod.visual_style,
-                featured_text: prod.featured_text
-            };
-            if (prod.is_drink) descObj.tipo_bebida = 'fria';
+            for (const prod of chunk) {
+                const descObj = {
+                    main_description: prod.description_text,
+                    variants: [],
+                    special_price: null,
+                    tags: prod.tags,
+                    visual_style: prod.visual_style,
+                    featured_text: prod.featured_text
+                };
+                if (prod.is_drink) descObj.tipo_bebida = 'fria';
 
-            const payload = {
-                name: prod.name,
-                price: prod.price,
-                category_id: catMap[prod.category_extracted],
-                description: JSON.stringify(descObj),
-                image_url: prod.image_url,
-                featured: prod.featured
-            };
+                const payload = {
+                    name: prod.name,
+                    price: prod.price,
+                    category_id: catMap[prod.category_extracted],
+                    description: JSON.stringify(descObj),
+                    image_url: prod.image_url,
+                    featured: prod.featured
+                };
 
-            if (existing && existing.length > 0) {
-                const { error } = await window.supabaseClient.from('products').update(payload).eq('id', existing[0].id);
-                if (error) throw error;
-            } else {
-                const { error } = await window.supabaseClient.from('products').insert([payload]);
-                if (error) throw error;
+                const { data: existingProd } = await window.supabaseClient.from('products').select('id').eq('name', prod.name);
+                if (existingProd && existingProd.length > 0) {
+                    await window.supabaseClient.from('products').update(payload).eq('id', existingProd[0].id);
+                } else {
+                    await window.supabaseClient.from('products').insert([payload]);
+                }
             }
+            await new Promise(r => setTimeout(r, 500)); // Increased delay for UI smoothness
         }
 
-        // System tags
+        msgEl.textContent = 'Finalizando configuración...';
         const orderedIds = categories.map(c => catMap[c.id_extracted]);
         const config = {
             tags: [
@@ -607,8 +640,10 @@ async function importZipMenu() {
                 { id: "nuevo", label: "Nuevo" }
             ],
             orderedCategoryIds: orderedIds,
+            categoryMetadata: catMetadata,
             weeklyCombos: {}
         };
+
         const { data: tagsData } = await window.supabaseClient.from('products').select('id').eq('name', '___SYSTEM_TAGS___');
         const tagsPayload = {
             name: '___SYSTEM_TAGS___',
@@ -616,6 +651,7 @@ async function importZipMenu() {
             price: 0,
             category_id: orderedIds[0]
         };
+
         if (tagsData && tagsData.length > 0) {
             await window.supabaseClient.from('products').update(tagsPayload).eq('id', tagsData[0].id);
         } else {
@@ -623,7 +659,9 @@ async function importZipMenu() {
         }
 
         statusEl.style.background = '#28a745';
-        statusEl.textContent = '¡Importación completada con éxito!';
+        statusEl.style.color = '#fff';
+        msgEl.textContent = '¡Importación completada con éxito!';
+
         setTimeout(() => {
             statusEl.remove();
             if (window.refreshData) window.refreshData();
@@ -632,8 +670,13 @@ async function importZipMenu() {
     } catch (e) {
         console.error(e);
         statusEl.style.background = '#dc3545';
-        statusEl.textContent = 'Error: ' + e.message;
-        setTimeout(() => statusEl.remove(), 10000);
+        statusEl.style.color = '#fff';
+        msgEl.textContent = 'Error: ' + (e.message || 'Error desconocido');
+        const closeBtn = document.createElement('button');
+        closeBtn.textContent = 'Cerrar';
+        closeBtn.style.marginTop = '10px';
+        closeBtn.onclick = () => statusEl.remove();
+        statusEl.appendChild(closeBtn);
     }
 }
 

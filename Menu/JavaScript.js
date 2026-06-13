@@ -121,6 +121,7 @@ async function fetchCategories() {
 
 let currentMenuTags = defaultMenuTags;
 let currentWeeklyCombos = {};
+let currentCategoryMetadata = {};
 
 function getTagLabels() {
   return currentMenuTags.reduce((map, tag) => { map[tag.id] = tag.label; return map; }, {});
@@ -256,6 +257,7 @@ async function renderMenu() {
       const config = JSON.parse(tagsRecord.description);
       currentMenuTags = config.tags || defaultMenuTags;
       currentWeeklyCombos = config.weeklyCombos || {};
+      currentCategoryMetadata = config.categoryMetadata || {};
       const orderedIds = config.orderedCategoryIds || [];
       if (orderedIds.length > 0) {
           categories.sort((a, b) => {
@@ -360,10 +362,17 @@ async function renderMenu() {
             bebidasGrids.appendChild(grid);
         }
     } else {
+        const meta = currentCategoryMetadata[cat.id] || { title: cat.name, description: "" };
         const header = document.createElement("div");
         header.className = "cat-header reveal";
         header.dataset.cat = cat.id;
-        header.innerHTML = `<div><span class="cat-num">0${idx+1}</span><h2 class="cat-title">${escapeHtml(cat.name)}</h2></div>`;
+        header.innerHTML = `
+            <div>
+                <span class="cat-num">0${idx+1} — ${escapeHtml(cat.name)}</span>
+                <h2 class="cat-title">${meta.title}</h2>
+            </div>
+            ${meta.description ? `<p class="cat-desc">${escapeHtml(meta.description)}</p>` : ''}
+        `;
         const grid = document.createElement("div");
         grid.className = "menu-grid";
         grid.dataset.cat = cat.id;
