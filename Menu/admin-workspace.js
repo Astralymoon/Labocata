@@ -1,3 +1,5 @@
+
+window.slugify = text => text.toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]+/g, '').replace(/--+/g, '-');
 /**
  * Admin Workspace Logic for Labocata
  */
@@ -27,8 +29,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 async function refreshData() {
-    const catalogList = document.getElementById("admin-catalog-list");
-    if (catalogList) catalogList.style.opacity = "0.5";
     const [prods, cats] = await Promise.all([
         window.supabaseClient.from('products').select('*'),
         window.supabaseClient.from('categories').select('*').order('created_at', { ascending: true })
@@ -73,28 +73,15 @@ async function refreshData() {
     renderCategoryManager();
     renderTagCloud();
     renderTagManager();
-    if (catalogList) catalogList.style.opacity = "1";
 }
 
 // UI TABS
 window.switchPaneTab = (tab) => {
-    const tabs = document.querySelectorAll('.pane-tab');
-    const contents = document.querySelectorAll('.pane-content');
+    document.querySelectorAll('.pane-tab').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.pane-content').forEach(el => el.style.display = 'none');
 
-    tabs.forEach(t => t.classList.remove('active'));
-    contents.forEach(c => {
-        c.style.display = 'none';
-        c.classList.remove('active');
-    });
-
-    const targetTab = document.getElementById(`tab-btn-${tab}`);
-    const targetContent = document.getElementById(`tab-${tab}`);
-
-    if (targetTab) targetTab.classList.add('active');
-    if (targetContent) {
-        targetContent.style.display = 'flex';
-        targetContent.classList.add('active');
-    }
+    document.getElementById(`tab-btn-${tab}`).classList.add('active');
+    document.getElementById(`tab-${tab}`).style.display = 'block';
 };
 
 // CATALOG RENDERING
@@ -168,17 +155,6 @@ window.openCategoryModal = (id = "", name = "") => {
     document.getElementById('category-modal').classList.add('active');
 };
 
-const slugify = text =>
-  text
-    .toString()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/[^\w-]+/g, '')
-    .replace(/--+/g, '-');
-
 window.saveCategory = async () => {
     const name = document.getElementById('new-cat-name').value.trim();
     const id = document.getElementById('category-modal').dataset.editId;
@@ -186,9 +162,9 @@ window.saveCategory = async () => {
 
     let res;
     if (id) {
-        res = await window.supabaseClient.from('categories').update({ name, slug: slugify(name) }).eq('id', id);
+        res = await window.supabaseClient.from('categories').update({ name, slug: window.slugify(name) }).eq('id', id);
     } else {
-        res = await window.supabaseClient.from('categories').insert([{ name, slug: slugify(name) }]);
+        res = await window.supabaseClient.from('categories').insert([{ name, slug: window.slugify(name) }]);
     }
 
     if (res.error) alert("Error: " + res.error.message);
@@ -266,7 +242,6 @@ window.saveTag = async () => {
     closeModals();
     renderTagCloud();
     renderTagManager();
-    if (catalogList) catalogList.style.opacity = "1";
 };
 
 window.deleteTag = async (id) => {
@@ -274,7 +249,6 @@ window.deleteTag = async (id) => {
     await persistConfig();
     renderTagCloud();
     renderTagManager();
-    if (catalogList) catalogList.style.opacity = "1";
 };
 
 // COMBOS

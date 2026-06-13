@@ -1,4 +1,4 @@
-const ZIP_MENU_DATA = {
+window.ZIP_MENU_DATA = {
   "categories": [
     {
       "id_extracted": "clasicos",
@@ -540,144 +540,42 @@ const ZIP_MENU_DATA = {
   ]
 };
 
-
-const slugify = text =>
-  text
-    .toString()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/[^\w-]+/g, '')
-    .replace(/--+/g, '-');
-
-async function importZipMenu() {
-    if (!confirm("¿Seguro que quieres importar el menú del ZIP? Esto optimizará y cargará los 40 platillos.")) return;
-
-    const statusEl = document.createElement('div');
-    Object.assign(statusEl.style, {
-        position: 'fixed', top: '20px', right: '20px', padding: '1.5rem',
-        background: '#120c06', color: '#c9a96e', zIndex: '9999',
-        border: '1px solid #c9a96e', fontFamily: 'Syne, sans-serif', fontSize: '0.8rem',
-        boxShadow: '0 10px 30px rgba(0,0,0,0.5)', minWidth: '250px'
-    });
-    statusEl.innerHTML = '<div style="margin-bottom:10px; font-weight:800; border-bottom:1px solid #333; padding-bottom:5px;">MIGRACIÓN EN CURSO</div><div id="import-msg">Iniciando...</div>';
-    document.body.appendChild(statusEl);
-    const msgEl = statusEl.querySelector('#import-msg');
-
+window.importZipMenu = async () => {
+    if (!confirm("¿Importar menú del ZIP?")) return;
+    const status = document.createElement('div');
+    Object.assign(status.style, { position:'fixed', top:'20px', right:'20px', padding:'1rem', background:'#000', color:'#fff', zIndex:'99999' });
+    status.textContent = 'Iniciando...';
+    document.body.appendChild(status);
     try {
-        const catMap = {};
-        const catMetadata = {};
-        const categories = ZIP_MENU_DATA.categories;
-        const products = ZIP_MENU_DATA.products;
-
-        msgEl.textContent = 'Sincronizando categorías...';
-        for (const cat of categories) {
-            msgEl.textContent = `Procesando categoría: ${cat.name}`;
-            const { data: existing } = await window.supabaseClient.from('categories').select('id').eq('name', cat.name);
-            let catId;
-            if (existing && existing.length > 0) {
-                catId = existing[0].id;
-                await window.supabaseClient.from('categories').update({ slug: slugify(cat.name) }).eq('id', catId);
-            } else {
-                const { data: newCat, error: insertError } = await window.supabaseClient.from('categories').insert([{
-                    name: cat.name,
-                    slug: slugify(cat.name)
-                }]).select();
-                if (insertError) throw insertError;
-                catId = newCat[0].id;
+        const catMap = {}, catMetadata = {};
+        for (const cat of window.ZIP_MENU_DATA.categories) {
+            status.textContent = `Cat: ${cat.name}`;
+            const { data: ex } = await window.supabaseClient.from('categories').select('id').eq('name', cat.name);
+            let id;
+            if (ex && ex.length > 0) { id = ex[0].id; }
+            else {
+                const { data: nw, error } = await window.supabaseClient.from('categories').insert([{ name: cat.name, slug: window.slugify(cat.name) }]).select();
+                if (error) throw error;
+                id = nw[0].id;
             }
-            catMap[cat.id_extracted] = catId;
-            catMetadata[catId] = { title: cat.html_name, description: cat.description };
-            await new Promise(r => setTimeout(r, 100));
+            catMap[cat.id_extracted] = id;
+            catMetadata[id] = { title: cat.html_name, description: cat.description };
         }
-
-        msgEl.textContent = 'Preparando platillos...';
-        const chunkSize = 5;
-        for (let i = 0; i < products.length; i += chunkSize) {
-            const chunk = products.slice(i, i + chunkSize);
-            msgEl.textContent = `Subiendo platillos (${i + chunk.length} de ${products.length})...`;
-
-            for (const prod of chunk) {
-                const descObj = {
-                    main_description: prod.description_text,
-                    variants: [],
-                    special_price: null,
-                    tags: prod.tags,
-                    visual_style: prod.visual_style,
-                    featured_text: prod.featured_text
-                };
-                if (prod.is_drink) descObj.tipo_bebida = 'fria';
-
-                const payload = {
-                    name: prod.name,
-                    price: prod.price,
-                    category_id: catMap[prod.category_extracted],
-                    description: JSON.stringify(descObj),
-                    image_url: prod.image_url,
-                    featured: prod.featured
-                };
-
-                const { data: existingProd } = await window.supabaseClient.from('products').select('id').eq('name', prod.name);
-                if (existingProd && existingProd.length > 0) {
-                    await window.supabaseClient.from('products').update(payload).eq('id', existingProd[0].id);
-                } else {
-                    await window.supabaseClient.from('products').insert([payload]);
-                }
-            }
-            await new Promise(r => setTimeout(r, 500)); // Increased delay for UI smoothness
+        for (const prod of window.ZIP_MENU_DATA.products) {
+            status.textContent = `Prod: ${prod.name.replace(/<[^>]*>/g, '')}`;
+            const desc = JSON.stringify({ main_description: prod.description_text, variants: [], tags: prod.tags, visual_style: prod.visual_style, featured_text: prod.featured_text, tipo_bebida: prod.is_drink ? 'fria' : null });
+            const payload = { name: prod.name, price: prod.price, category_id: catMap[prod.category_extracted], description: desc, image_url: prod.image_url, featured: prod.featured };
+            const { data: exP } = await window.supabaseClient.from('products').select('id').eq('name', prod.name);
+            if (exP && exP.length > 0) { await window.supabaseClient.from('products').update(payload).eq('id', exP[0].id); }
+            else { await window.supabaseClient.from('products').insert([payload]); }
+            await new Promise(r => setTimeout(r, 50));
         }
-
-        msgEl.textContent = 'Finalizando configuración...';
-        const orderedIds = categories.map(c => catMap[c.id_extracted]);
-        const config = {
-            tags: [
-                { id: "v", label: "Vegetariano" },
-                { id: "vg", label: "Vegano" },
-                { id: "gf", label: "Sin gluten" },
-                { id: "s", label: "Signature" },
-                { id: "nuevo", label: "Nuevo" }
-            ],
-            orderedCategoryIds: orderedIds,
-            categoryMetadata: catMetadata,
-            weeklyCombos: {}
-        };
-
+        const orderedIds = window.ZIP_MENU_DATA.categories.map(c => catMap[c.id_extracted]);
+        const config = { tags: [{id:"v",label:"Vegetariano"},{id:"vg",label:"Vegano"},{id:"gf",label:"Sin gluten"},{id:"s",label:"Signature"},{id:"nuevo",label:"Nuevo"}], orderedCategoryIds: orderedIds, categoryMetadata: catMetadata, weeklyCombos: {} };
         const { data: tagsData } = await window.supabaseClient.from('products').select('id').eq('name', '___SYSTEM_TAGS___');
-        const tagsPayload = {
-            name: '___SYSTEM_TAGS___',
-            description: JSON.stringify(config),
-            price: 0,
-            category_id: orderedIds[0]
-        };
-
-        if (tagsData && tagsData.length > 0) {
-            await window.supabaseClient.from('products').update(tagsPayload).eq('id', tagsData[0].id);
-        } else {
-            await window.supabaseClient.from('products').insert([tagsPayload]);
-        }
-
-        statusEl.style.background = '#28a745';
-        statusEl.style.color = '#fff';
-        msgEl.textContent = '¡Importación completada con éxito!';
-
-        setTimeout(() => {
-            statusEl.remove();
-            if (window.refreshData) window.refreshData();
-        }, 3000);
-
-    } catch (e) {
-        console.error(e);
-        statusEl.style.background = '#dc3545';
-        statusEl.style.color = '#fff';
-        msgEl.textContent = 'Error: ' + (e.message || 'Error desconocido');
-        const closeBtn = document.createElement('button');
-        closeBtn.textContent = 'Cerrar';
-        closeBtn.style.marginTop = '10px';
-        closeBtn.onclick = () => statusEl.remove();
-        statusEl.appendChild(closeBtn);
-    }
-}
-
-window.importZipMenu = importZipMenu;
+        if (tagsData && tagsData.length > 0) { await window.supabaseClient.from('products').update({ description: JSON.stringify(config) }).eq('id', tagsData[0].id); }
+        else { await window.supabaseClient.from('products').insert([{ name: '___SYSTEM_TAGS___', description: JSON.stringify(config), price: 0, category_id: orderedIds[0] }]); }
+        status.textContent = '¡Completado!';
+        setTimeout(() => { status.remove(); if (window.refreshData) window.refreshData(); }, 2000);
+    } catch (e) { status.textContent = 'Error: ' + e.message; console.error(e); }
+};

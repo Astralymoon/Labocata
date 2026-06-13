@@ -197,12 +197,10 @@ function renderProductCard(product) {
 
   const originalPriceHtml = special_price ? `<span class="old-price">$${Number(product.price).toLocaleString("es-MX")}</span>` : "";
 
-  const featuredBadgeText = featured_text || "Recomendado";
-
   card.innerHTML = `
     ${(styleClass !== 'text-card' && hasImage) ? `<div class="item-photo"><img src="${escapeHtml(product.image_url)}" alt="${product.name.replace(/<[^>]*>/g, '')}" loading="lazy" /></div>` : ""}
     <div class="item-body">
-      ${isFeatured ? `<span class="featured-badge">✦ &nbsp;${escapeHtml(featuredBadgeText)}</span>` : ''}
+      ${isFeatured ? `<span class="featured-badge">✦ &nbsp;${escapeHtml(featured_text || "Recomendado")}</span>` : ""}
       <div class="item-header">
         <h3 class="item-name">${product.name}</h3>
         <div class="price-wrapper">
