@@ -48,24 +48,6 @@ function applyMenuFilter(btn) {
     return;
   }
 
-  // Handle dynamic tags
-  const isTag = currentMenuTags.some(t => t.id === f) || f === "vegano";
-  if (isTag) {
-    document.querySelectorAll(".menu-item").forEach((item) => {
-      const tags = (item.dataset.tags || "").split(',');
-      const show = tags.includes(f) || (f === "vegano" && tags.includes("vg"));
-      item.style.display = show ? "" : "none";
-    });
-    syncVisibleCategorySections();
-    // Also sync beverage sections
-    document.querySelectorAll(".bebidas-grid").forEach(grid => {
-        const hasVisible = Array.from(grid.querySelectorAll(".menu-item")).some(i => i.style.display !== "none");
-        grid.style.display = hasVisible ? "" : "none";
-        const header = grid.previousElementSibling;
-        if (header && header.classList.contains('bebidas-subheader')) header.style.display = hasVisible ? "" : "none";
-    });
-    return;
-  }
 
   // Filter food categories
   catHeaders.forEach((h) => (h.style.display = h.dataset.cat === f ? "" : "none"));
@@ -312,19 +294,6 @@ async function renderMenu() {
           filterInner.appendChild(div);
       });
 
-      // Dynamic Tags
-      currentMenuTags.forEach(tag => {
-          const tBtn = document.createElement("button");
-          tBtn.className = "filter-btn";
-          tBtn.dataset.filter = tag.id;
-          tBtn.textContent = tag.label;
-          tBtn.onclick = () => applyMenuFilter(tBtn);
-          filterInner.appendChild(tBtn);
-          const div = document.createElement("div");
-          div.className = "filter-divider";
-          filterInner.appendChild(div);
-      });
-
       const dietary = document.createElement("div");
       dietary.className = "filter-dietary";
       dietary.innerHTML = currentMenuTags.map(t => `
@@ -470,7 +439,7 @@ function renderLivePreviewItem(product) {
       <div style="text-align:center; font-family:'Syne',sans-serif; font-size:0.6rem; font-weight:800; color:#856404; text-transform:uppercase; letter-spacing:0.2em; margin-bottom:1.5rem;">
         ✦ Editando ahora
       </div>
-      <div id="preview-item-container" class="menu-grid" style="grid-template-columns:1fr; max-width:450px; margin:0 auto; box-shadow: 0 20px 40px rgba(0,0,0,0.1);"></div>
+      <div id="preview-item-container" class="menu-grid" style="grid-template-columns: repeat(2, 1fr); max-width:900px; margin:0 auto; box-shadow: 0 20px 40px rgba(0,0,0,0.1);"></div>
     `;
     document.body.prepend(previewSection);
   }
@@ -707,9 +676,18 @@ window.setOrderType = (type) => {
 // ===== ANIMATIONS =====
 const revealObs = new IntersectionObserver(entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add("visible"); }), { threshold: 0.1 });
 const cardObs = new IntersectionObserver(entries => entries.forEach((e, i) => {
-  if (e.isIntersecting) { setTimeout(() => { e.target.style.opacity = "1"; e.target.style.transform = "translateY(0)"; }, (i % 4) * 60); cardObs.unobserve(e.target); }
+  if (e.isIntersecting) {
+    // Add staggered delay based on position
+    const delay = (i % 4) * 0.08;
+    e.target.style.animationDelay = `${delay}s`;
+    e.target.classList.add("is-visible");
+    cardObs.unobserve(e.target);
+  }
 }), { threshold: 0.05 });
-function prepareCardAnimation(el) { el.style.opacity = "0"; el.style.transform = "translateY(16px)"; el.style.transition = "opacity 0.6s, transform 0.6s ease-out"; cardObs.observe(el); }
+function prepareCardAnimation(el) {
+  el.classList.remove("is-visible"); // Reset for re-animation if needed
+  cardObs.observe(el);
+}
 
 document.addEventListener("DOMContentLoaded", async () => {
   if (window.self !== window.top) document.body.classList.add('is-preview');
