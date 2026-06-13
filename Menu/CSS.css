@@ -1114,13 +1114,21 @@ nav.scrolled .cart-count-badge { background: var(--gold); color: var(--espresso)
 }
 .menu-item:hover {
   background: var(--cream);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
   z-index: 2;
+  transform: translateY(-4px);
 }
 
 /* Text-only card */
-.menu-item.text-card { padding: var(--sp-4) var(--sp-4); }
+.menu-item.text-card {
+  padding: var(--sp-4) var(--sp-4);
+  /* Use the same lift animation/transition as photo cards */
+}
 .menu-item.text-card > * { position: relative; z-index: 1; }
+
+.menu-item.text-card:hover {
+  transform: translateY(-4px);
+}
 
 /* Card with photo */
 .menu-item.has-photo { padding: 0; }

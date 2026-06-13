@@ -33,38 +33,51 @@ function applyMenuFilter(btn) {
   btn.classList.add("active");
   const f = btn.dataset.filter;
 
+  // Food categories and headers
   catHeaders.forEach((h) => (h.style.display = ""));
   menuGrids.forEach((g) => (g.style.display = ""));
+
+  // All menu items (food + beverages)
+  document.querySelectorAll(".menu-item").forEach((i) => (i.style.display = ""));
+
+  // Bebidas section remains ALWAYS visible as per user request
   setBebidasVisible(true);
-  document.querySelectorAll("#menuBody .menu-item").forEach((i) => (i.style.display = ""));
 
-  if (f === "all") return;
-
-  if (f === "bebidas") {
-    catHeaders.forEach((h) => (h.style.display = "none"));
-    menuGrids.forEach((g) => (g.style.display = "none"));
-    setTimeout(() => { if(bebidasSection) bebidasSection.scrollIntoView({ behavior: "smooth", block: "start" }) }, 50);
+  if (f === "all") {
+    syncVisibleCategorySections();
     return;
   }
 
   // Handle dynamic tags
   const isTag = currentMenuTags.some(t => t.id === f) || f === "vegano";
   if (isTag) {
-    catHeaders.forEach((h) => (h.style.display = ""));
-    menuGrids.forEach((g) => (g.style.display = ""));
-    document.querySelectorAll("#menuBody .menu-item").forEach((item) => {
+    document.querySelectorAll(".menu-item").forEach((item) => {
       const tags = (item.dataset.tags || "").split(',');
       const show = tags.includes(f) || (f === "vegano" && tags.includes("vg"));
       item.style.display = show ? "" : "none";
     });
-    setBebidasVisible(false);
     syncVisibleCategorySections();
+    // Also sync beverage sections
+    document.querySelectorAll(".bebidas-grid").forEach(grid => {
+        const hasVisible = Array.from(grid.querySelectorAll(".menu-item")).some(i => i.style.display !== "none");
+        grid.style.display = hasVisible ? "" : "none";
+        const header = grid.previousElementSibling;
+        if (header && header.classList.contains('bebidas-subheader')) header.style.display = hasVisible ? "" : "none";
+    });
     return;
   }
 
+  // Filter food categories
   catHeaders.forEach((h) => (h.style.display = h.dataset.cat === f ? "" : "none"));
   menuGrids.forEach((g) => (g.style.display = g.dataset.cat === f ? "" : "none"));
-  setBebidasVisible(false);
+
+  // When a specific food category is selected, we only show items of that category in the food section.
+  // But user said Beverages should be independent.
+  // Let's hide other food items.
+  document.querySelectorAll("#menuBody .menu-item").forEach(item => {
+      if (item.dataset.cat !== f) item.style.display = "none";
+  });
+
   setTimeout(() => {
     const first = document.querySelector(`.cat-header:not(.bebidas-subheader)[data-cat="${f}"]`);
     if (first) first.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -273,7 +286,19 @@ async function renderMenu() {
   // Update Filter Nav
   const filterInner = document.querySelector(".filter-inner");
   if (filterInner) {
-      filterInner.innerHTML = `<button class="filter-btn active" data-filter="all">Todo el menú</button><div class="filter-divider"></div>`;
+      filterInner.innerHTML = "";
+
+      const allBtn = document.createElement("button");
+      allBtn.className = "filter-btn active";
+      allBtn.dataset.filter = "all";
+      allBtn.textContent = "Todo el menú";
+      allBtn.onclick = () => applyMenuFilter(allBtn);
+      filterInner.appendChild(allBtn);
+
+      const divAll = document.createElement("div");
+      divAll.className = "filter-divider";
+      filterInner.appendChild(divAll);
+
       categories.forEach(cat => {
           if (cat.name.toLowerCase().includes('bebida')) return;
           const btn = document.createElement("button");
@@ -286,15 +311,6 @@ async function renderMenu() {
           div.className = "filter-divider";
           filterInner.appendChild(div);
       });
-      const bBtn = document.createElement("button");
-      bBtn.className = "filter-btn";
-      bBtn.dataset.filter = "bebidas";
-      bBtn.textContent = "Bebidas";
-      bBtn.onclick = () => applyMenuFilter(bBtn);
-      filterInner.appendChild(bBtn);
-      const div2 = document.createElement("div");
-      div2.className = "filter-divider";
-      filterInner.appendChild(div2);
 
       // Dynamic Tags
       currentMenuTags.forEach(tag => {
