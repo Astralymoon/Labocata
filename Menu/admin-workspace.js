@@ -13,6 +13,7 @@ let systemTags = [
 ];
 let orderedCategoryIds = [];
 let weeklyCombos = {}; // Day (0-6) -> { title, subtitle, dish1, dish2, price }
+let spotlightManualConfig = { active: false, productId: "", price: "" };
 
 document.addEventListener("DOMContentLoaded", async () => {
     await window.auth.requireAdmin();
@@ -48,6 +49,7 @@ async function refreshData() {
                     systemTags = config.tags || systemTags;
                     orderedCategoryIds = config.orderedCategoryIds || [];
                     weeklyCombos = config.weeklyCombos || {};
+                    spotlightManualConfig = config.spotlightManualConfig || spotlightManualConfig;
                 }
             }
         } catch (e) { console.error("Error parsing system config", e); }
@@ -71,6 +73,7 @@ async function refreshData() {
     renderCategoryManager();
     renderTagCloud();
     renderTagManager();
+    renderSpotlightManager();
 }
 
 // UI TABS
@@ -212,7 +215,8 @@ async function persistConfig() {
     const config = {
         tags: systemTags,
         orderedCategoryIds: orderedCategoryIds,
-        weeklyCombos: weeklyCombos
+        weeklyCombos: weeklyCombos,
+        spotlightManualConfig: spotlightManualConfig
     };
     const payload = {
         name: '___SYSTEM_TAGS___',
@@ -249,7 +253,24 @@ window.deleteTag = async (id) => {
     renderTagManager();
 };
 
-// COMBOS
+// SPOTLIGHT & COMBOS
+function renderSpotlightManager() {
+    const products = allProducts.filter(p => p.name !== '___SYSTEM_TAGS___');
+    const select = document.getElementById('spotlight-product');
+    select.innerHTML = `<option value="">-- Seleccionar Producto --</option>` +
+        products.map(p => `<option value="${p.id}" ${p.id === spotlightManualConfig.productId ? 'selected' : ''}>${p.name}</option>`).join('');
+
+    document.getElementById('spotlight-active').checked = spotlightManualConfig.active;
+    document.getElementById('spotlight-price').value = spotlightManualConfig.price;
+}
+
+window.saveSpotlightConfig = async () => {
+    spotlightManualConfig.active = document.getElementById('spotlight-active').checked;
+    spotlightManualConfig.productId = document.getElementById('spotlight-product').value;
+    spotlightManualConfig.price = document.getElementById('spotlight-price').value;
+    await persistConfig();
+};
+
 window.openComboModal = () => {
     const d1 = document.getElementById('combo-dish1');
     const d2 = document.getElementById('combo-dish2');

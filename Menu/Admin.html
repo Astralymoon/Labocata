@@ -324,8 +324,20 @@
                 <div class="pane-header" style="border-top: 1px solid #ddd; margin-top: 1rem;">
                     <h2>Platillo del Día</h2>
                 </div>
-                <div id="combo-manager-list" style="padding: 0.5rem;">
-                    <button class="btn btn-ghost" style="width: 100%; font-size: 0.75rem;" onclick="openComboModal()">Configurar Combos Semanales</button>
+                <div style="padding: 0.8rem; background: #fff8e1; margin: 0.5rem; border-radius: 8px; border: 1px solid #ffe082;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.5rem;">
+                        <input type="checkbox" id="spotlight-active" onchange="saveSpotlightConfig()">
+                        Activar Spotlight (Platillo del Día)
+                    </label>
+                    <div class="field">
+                        <label style="font-size: 0.65rem;">PRODUCTO DESTACADO</label>
+                        <select id="spotlight-product" style="font-size: 0.8rem; padding: 0.4rem;" onchange="saveSpotlightConfig()"></select>
+                    </div>
+                    <div class="field">
+                        <label style="font-size: 0.65rem;">PRECIO ESPECIAL (COMBO)</label>
+                        <input type="number" id="spotlight-price" style="font-size: 0.8rem; padding: 0.4rem;" placeholder="Precio" oninput="saveSpotlightConfig()">
+                    </div>
+                    <button class="btn btn-ghost" style="width: 100%; font-size: 0.65rem; margin-top: 0.5rem;" onclick="openComboModal()">Configuración Avanzada (Combos Semanales)</button>
                 </div>
             </div>
         </aside>

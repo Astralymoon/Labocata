@@ -121,6 +121,7 @@ async function fetchCategories() {
 
 let currentMenuTags = defaultMenuTags;
 let currentWeeklyCombos = {};
+let currentSpotlightManualConfig = { active: false, productId: "", price: "" };
 
 function getTagLabels() {
   return currentMenuTags.reduce((map, tag) => { map[tag.id] = tag.label; return map; }, {});
@@ -253,6 +254,7 @@ async function renderMenu() {
       const config = JSON.parse(tagsRecord.description);
       currentMenuTags = config.tags || defaultMenuTags;
       currentWeeklyCombos = config.weeklyCombos || {};
+      currentSpotlightManualConfig = config.spotlightManualConfig || currentSpotlightManualConfig;
       const orderedIds = config.orderedCategoryIds || [];
       if (orderedIds.length > 0) {
           categories.sort((a, b) => {
@@ -370,12 +372,31 @@ async function renderMenu() {
     }
   });
 
-  // Spotlight — Platillo del Día / Combo
+  // Spotlight — Platillo del Día / Combo / Manual
   const today = new Date().getDay();
   const combo = currentWeeklyCombos[today];
   const spotlightSection = document.querySelector(".menu-spotlight");
 
-  if (combo && combo.title) {
+  if (currentSpotlightManualConfig.active && currentSpotlightManualConfig.productId) {
+      // Manual spotlight overrides everything
+      const p = products.find(prod => prod.id === currentSpotlightManualConfig.productId);
+      if (p && spotlightSection) {
+          spotlightSection.style.display = "grid";
+          const { desc } = parseVariants(p);
+          const price = currentSpotlightManualConfig.price || p.price;
+          document.getElementById("spotlightTitle").textContent = p.name;
+          document.getElementById("spotlightDescription").textContent = desc;
+          document.getElementById("spotlightTotal").textContent = `$${Number(price).toLocaleString("es-MX")}`;
+          if (p.image_url) document.getElementById("spotlightImageOne").src = p.image_url;
+
+          const actionBtn = spotlightSection.querySelector(".spotlight-btn.primary");
+          actionBtn.textContent = "Agregar Platillo";
+          actionBtn.onclick = (e) => {
+              e.preventDefault();
+              addToOrder(actionBtn, p.name, price, 'spotlight-qty');
+          }
+      }
+  } else if (combo && combo.title) {
       spotlightSection.style.display = "grid";
       document.getElementById("spotlightTitle").textContent = combo.title;
       document.getElementById("spotlightDescription").textContent = combo.subtitle;
@@ -384,11 +405,7 @@ async function renderMenu() {
       const p1 = products.find(p => p.id === combo.dish1);
       const p2 = products.find(p => p.id === combo.dish2);
       if (p1 && p1.image_url) document.getElementById("spotlightImageOne").src = p1.image_url;
-      if (p2 && p2.image_url) {
-          // If we had a second image slot, we'd use it. For now let's ensure at least one is visible.
-      }
 
-      // Add to order button for combo
       const actionBtn = spotlightSection.querySelector(".spotlight-btn.primary");
       actionBtn.textContent = "Agregar Combo";
       actionBtn.onclick = (e) => {
