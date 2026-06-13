@@ -117,6 +117,7 @@ async function fetchCategories() {
 let currentMenuTags = defaultMenuTags;
 let currentWeeklyCombos = {};
 let currentCategoryMetadata = {};
+let currentCategories = [];
 
 function getTagLabels() {
   return currentMenuTags.reduce((map, tag) => { map[tag.id] = tag.label; return map; }, {});
@@ -186,11 +187,11 @@ function renderProductCard(product) {
   let initialAddName = product.name;
 
   if (variants.length > 0) {
-    displayPrice = variants[0].price;
+    displayPrice = variants[0].price || 0;
     initialAddName = `${product.name} (${variants[0].name})`;
   }
 
-  const originalPriceHtml = special_price ? `<span class="old-price">$${Number(product.price).toLocaleString("es-MX")}</span>` : "";
+  const originalPriceHtml = (special_price && Number(product.price)) ? `<span class="old-price">$${Number(product.price).toLocaleString("es-MX")}</span>` : "";
 
   card.innerHTML = `
     ${(styleClass !== 'text-card' && hasImage) ? `<div class="item-photo"><img src="${escapeHtml(product.image_url)}" alt="${product.name.replace(/<[^>]*>/g, '')}" loading="lazy" /></div>` : ""}
@@ -242,6 +243,7 @@ async function renderMenu() {
   if (!container) return;
 
   let [categories, products] = await Promise.all([fetchCategories(), fetchProducts()]);
+  currentCategories = categories;
 
   // Load dynamic config from ___SYSTEM_TAGS___
   const tagsRecord = products.find(p => p.name === '___SYSTEM_TAGS___');
@@ -328,7 +330,12 @@ async function renderMenu() {
                 const grid = document.createElement("div");
                 grid.className = "menu-grid bebidas-grid";
                 grid.dataset.drinkCat = type.id;
-                typeProducts.forEach(p => grid.appendChild(renderProductCard(p)));
+                typeProducts.forEach((p, pIdx) => {
+                    const card = renderProductCard(p);
+                    const delayIdx = pIdx % 5;
+                    if (delayIdx > 0) card.classList.add(`reveal-delay-${delayIdx}`);
+                    grid.appendChild(card);
+                });
                 bebidasGrids.appendChild(grid);
             }
         });
@@ -341,7 +348,12 @@ async function renderMenu() {
             const grid = document.createElement("div");
             grid.className = "menu-grid bebidas-grid";
             grid.dataset.drinkCat = "todas";
-            other.forEach(p => grid.appendChild(renderProductCard(p)));
+            other.forEach((p, pIdx) => {
+                const card = renderProductCard(p);
+                const delayIdx = pIdx % 5;
+                if (delayIdx > 0) card.classList.add(`reveal-delay-${delayIdx}`);
+                grid.appendChild(card);
+            });
             bebidasGrids.appendChild(grid);
         }
     } else {
@@ -359,7 +371,12 @@ async function renderMenu() {
         const grid = document.createElement("div");
         grid.className = "menu-grid";
         grid.dataset.cat = cat.id;
-        catProducts.forEach(p => grid.appendChild(renderProductCard(p)));
+        catProducts.forEach((p, pIdx) => {
+            const card = renderProductCard(p);
+            const delayIdx = pIdx % 5;
+            if (delayIdx > 0) card.classList.add(`reveal-delay-${delayIdx}`);
+            grid.appendChild(card);
+        });
         container.appendChild(header);
         container.appendChild(grid);
     }
@@ -372,7 +389,7 @@ async function renderMenu() {
 
   if (combo && combo.title) {
       spotlightSection.style.display = "grid";
-      document.getElementById("spotlightTitle").textContent = combo.title;
+      document.getElementById("spotlightTitle").innerHTML = combo.title;
       document.getElementById("spotlightDescription").textContent = combo.subtitle;
       document.getElementById("spotlightTotal").textContent = `$${Number(combo.price).toLocaleString("es-MX")}`;
 
@@ -397,7 +414,7 @@ async function renderMenu() {
           spotlightSection.style.display = "grid";
           const { desc, special_price } = parseVariants(spotlightProd);
           const displayPrice = special_price || spotlightProd.price;
-          document.getElementById("spotlightTitle").textContent = spotlightProd.name;
+          document.getElementById("spotlightTitle").innerHTML = spotlightProd.name;
           document.getElementById("spotlightDescription").textContent = desc;
           document.getElementById("spotlightTotal").textContent = `$${Number(displayPrice).toLocaleString("es-MX")}`;
           if (spotlightProd.image_url) document.getElementById("spotlightImageOne").src = spotlightProd.image_url;
@@ -421,25 +438,72 @@ async function renderMenu() {
 
 // ===== PREVIEW MESSAGE LISTENER =====
 window.addEventListener('message', (event) => {
-  if (event.data.type === 'PREVIEW_UPDATE') updateItemInPlace(event.data.product);
+  if (event.data.type === 'PREVIEW_UPDATE') previewProduct(event.data.product);
 });
 
-function updateItemInPlace(product) {
-  const existing = document.getElementById(`prod-${product.id}`);
-  if (!existing) return;
-
+function previewProduct(product) {
+  const cardId = `prod-${product.id}`;
+  const existing = document.getElementById(cardId);
   const newCard = renderProductCard(product);
 
-  // Force visibility for previewer immediately
+  // High visibility for preview
   newCard.classList.add('visible');
   newCard.style.transition = "none";
   newCard.style.opacity = "1";
   newCard.style.transform = "translateY(0)";
 
-  existing.replaceWith(newCard);
+  if (existing) {
+    // If category changed, we need to move it
+    if (existing.dataset.cat !== product.category_id) {
+        existing.remove();
+        insertProductInGrid(newCard, product);
+    } else {
+        existing.replaceWith(newCard);
+    }
+  } else {
+    insertProductInGrid(newCard, product);
+  }
 
-  // Do NOT auto-scroll. User said "it shows up top".
-  // It should just update where it is in the menu.
+  // Scroll to show the change
+  newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function insertProductInGrid(card, product) {
+    // Determine if it's a beverage or food
+    const cat = currentCategories.find(c => c.id === product.category_id);
+    const isBebida = cat && cat.name.toLowerCase().includes('bebida');
+    const { tipo_bebida } = parseVariants(product);
+
+    let grid;
+    let header;
+
+    if (isBebida) {
+        const drinkCat = tipo_bebida || "todas";
+        grid = document.querySelector(`.bebidas-grid[data-drink-cat="${drinkCat}"]`);
+        header = grid ? grid.previousElementSibling : null;
+    } else {
+        grid = document.querySelector(`.menu-grid[data-cat="${product.category_id}"]`);
+        header = document.querySelector(`.cat-header[data-cat="${product.category_id}"]`);
+    }
+
+    if (grid) {
+        grid.prepend(card);
+        grid.style.display = ""; // Ensure grid is visible
+        if (header) header.style.display = ""; // Ensure header is visible
+
+        // If it was food and now is beverage (or vice-versa), ensure sections are shown
+        if (isBebida) setBebidasVisible(true);
+    } else {
+        // Fallback: if it's food, try to prepend to the first available food grid
+        const foodGrids = document.querySelectorAll('.menu-grid:not(.bebidas-grid)');
+        if (!isBebida && foodGrids.length > 0) {
+            foodGrids[0].prepend(card);
+        } else {
+            // Last resort: main container (shows at top)
+            const container = document.getElementById("menu-categories-container");
+            if (container) container.prepend(card);
+        }
+    }
 }
 
 // ===== SOUND EFFECTS =====

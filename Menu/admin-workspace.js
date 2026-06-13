@@ -247,15 +247,13 @@ window.saveTag = async () => {
     systemTags.push({ id, label });
     await persistConfig();
     closeModals();
-    renderTagCloud();
-    renderTagManager();
+    await refreshData();
 };
 
 window.deleteTag = async (id) => {
     systemTags = systemTags.filter(t => t.id !== id);
     await persistConfig();
-    renderTagCloud();
-    renderTagManager();
+    await refreshData();
 };
 
 // COMBOS
@@ -432,7 +430,7 @@ async function saveProduct() {
     const variants = Array.from(variantRows).map(row => {
         const inputs = row.querySelectorAll('input');
         return { name: inputs[0].value, price: Number(inputs[1].value) };
-    }).filter(v => v.name && v.price);
+    }).filter(v => v.name); // Price can be empty while typing
 
     // Prepare description (JSON)
     const descObj = {
@@ -459,8 +457,13 @@ async function saveProduct() {
         alert("Error al guardar: " + res.error.message);
     } else {
         await refreshData();
-        if (!id) resetEditor();
-        else loadProduct(id);
+        if (!id) {
+            resetEditor();
+            // Scroll to the bottom of catalog or find the new item?
+            // For now, catalog re-renders and it should be there.
+        } else {
+            loadProduct(id);
+        }
     }
 }
 
@@ -484,6 +487,7 @@ function updatePreview() {
     const iframe = document.getElementById('preview-iframe');
     if (!iframe || !iframe.contentWindow) return;
 
+    const id = document.getElementById('dishId').value;
     const name = document.getElementById('name').value || "Nombre del Platillo";
     const price = Number(document.getElementById('price').value) || 0;
     const description_text = document.getElementById('description').value || "Descripción breve...";
@@ -547,6 +551,37 @@ window.updatePreviewMode = (val) => {
         frame.style.borderRadius = '';
         frame.style.border = '';
     }
+};
+
+window.transferLegacyCategories = async () => {
+    const legacyProds = allProducts.filter(p => p.name.startsWith('---') && p.name.endsWith('---'));
+    if (legacyProds.length === 0) {
+        alert("No se encontraron marcadores de categorías antiguas.");
+        return;
+    }
+
+    if (!confirm(`Se encontraron ${legacyProds.length} categorías para transferir. ¿Continuar?`)) return;
+
+    let count = 0;
+    for (const p of legacyProds) {
+        const catName = p.name.replace(/-/g, '').trim();
+        const { data, error } = await window.supabaseClient.from('categories').insert([{
+            name: catName,
+            slug: window.slugify(catName)
+        }]).select();
+
+        if (!error && data && data[0]) {
+            // Update items that are currently under the category of this marker
+            const newCatId = data[0].id;
+            await window.supabaseClient.from('products').update({ category_id: newCatId }).eq('category_id', p.category_id);
+            // Delete the marker
+            await window.supabaseClient.from('products').delete().eq('id', p.id);
+            count++;
+        }
+    }
+
+    alert(`Transferencia completada: ${count} categorías creadas.`);
+    await refreshData();
 };
 
 window.resetEditor = resetEditor;
