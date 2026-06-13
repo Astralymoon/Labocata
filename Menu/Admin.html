@@ -327,6 +327,14 @@
                 <div id="combo-manager-list" style="padding: 0.5rem;">
                     <button class="btn btn-ghost" style="width: 100%; font-size: 0.75rem;" onclick="openComboModal()">Configurar Combos Semanales</button>
                 </div>
+
+                <div class="pane-header" style="border-top: 1px solid #ddd; margin-top: 1rem;">
+                    <h2>Sistema</h2>
+                </div>
+                <div style="padding: 0.5rem;">
+                    <button class="btn btn-primary" style="width: 100%; font-size: 0.75rem; background: #120c06;" onclick="window.importZipMenu()">Importar Menú del ZIP</button>
+                    <p style="font-size: 0.65rem; color: #888; margin-top: 0.5rem; text-align: center;">Carga los 40 platillos y categorías extraídos del archivo original.</p>
+                </div>
             </div>
         </aside>
 
@@ -530,6 +538,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-init.js"></script>
     <script src="auth.js"></script>
+    <script src="import-data.js"></script>
     <script src="admin-workspace.js"></script>
 </body>
 </html>
