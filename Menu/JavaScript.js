@@ -430,18 +430,16 @@ function updateItemInPlace(product) {
 
   const newCard = renderProductCard(product);
 
-  // Force visibility for previewer
+  // Force visibility for previewer immediately
   newCard.classList.add('visible');
   newCard.style.transition = "none";
   newCard.style.opacity = "1";
-  newCard.style.transform = "none";
+  newCard.style.transform = "translateY(0)";
 
   existing.replaceWith(newCard);
 
-  // If we are in preview mode (iframe), scroll to it
-  if (window.self !== window.top) {
-    newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
+  // Do NOT auto-scroll. User said "it shows up top".
+  // It should just update where it is in the menu.
 }
 
 // ===== SOUND EFFECTS =====
@@ -663,7 +661,7 @@ window.setOrderType = (type) => {
 };
 
 // ===== ANIMATIONS =====
-const revealObs = new IntersectionObserver(entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add("visible"); }), { threshold: 0.1 });
+const revealObs = new IntersectionObserver(entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add("visible"); }), { threshold: 0.15 });
 
 document.addEventListener("DOMContentLoaded", async () => {
   if (window.self !== window.top) document.body.classList.add('is-preview');
