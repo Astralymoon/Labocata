@@ -153,6 +153,17 @@ window.openCategoryModal = (id = "", name = "") => {
     document.getElementById('category-modal').classList.add('active');
 };
 
+const slugify = text =>
+  text
+    .toString()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w-]+/g, '')
+    .replace(/--+/g, '-');
+
 window.saveCategory = async () => {
     const name = document.getElementById('new-cat-name').value.trim();
     const id = document.getElementById('category-modal').dataset.editId;
@@ -160,9 +171,9 @@ window.saveCategory = async () => {
 
     let res;
     if (id) {
-        res = await window.supabaseClient.from('categories').update({ name }).eq('id', id);
+        res = await window.supabaseClient.from('categories').update({ name, slug: slugify(name) }).eq('id', id);
     } else {
-        res = await window.supabaseClient.from('categories').insert([{ name }]);
+        res = await window.supabaseClient.from('categories').insert([{ name, slug: slugify(name) }]);
     }
 
     if (res.error) alert("Error: " + res.error.message);
