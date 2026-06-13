@@ -626,7 +626,7 @@ async function importZipMenu() {
                     await window.supabaseClient.from('products').insert([payload]);
                 }
             }
-            await new Promise(r => setTimeout(r, 200));
+            await new Promise(r => setTimeout(r, 500)); // Increased delay for UI smoothness
         }
 
         msgEl.textContent = 'Finalizando configuración...';

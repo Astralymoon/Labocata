@@ -27,6 +27,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 async function refreshData() {
+    const catalogList = document.getElementById("admin-catalog-list");
+    if (catalogList) catalogList.style.opacity = "0.5";
     const [prods, cats] = await Promise.all([
         window.supabaseClient.from('products').select('*'),
         window.supabaseClient.from('categories').select('*').order('created_at', { ascending: true })
@@ -71,15 +73,15 @@ async function refreshData() {
     renderCategoryManager();
     renderTagCloud();
     renderTagManager();
+    if (catalogList) catalogList.style.opacity = "1";
 }
 
 // UI TABS
 window.switchPaneTab = (tab) => {
     document.querySelectorAll('.pane-tab').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.pane-content').forEach(el => el.style.display = 'none');
-
     document.getElementById(`tab-btn-${tab}`).classList.add('active');
-    document.getElementById(`tab-${tab}`).style.display = 'block';
+    document.getElementById(`tab-${tab}`).style.display = 'flex';
 };
 
 // CATALOG RENDERING
@@ -251,6 +253,7 @@ window.saveTag = async () => {
     closeModals();
     renderTagCloud();
     renderTagManager();
+    if (catalogList) catalogList.style.opacity = "1";
 };
 
 window.deleteTag = async (id) => {
@@ -258,6 +261,7 @@ window.deleteTag = async (id) => {
     await persistConfig();
     renderTagCloud();
     renderTagManager();
+    if (catalogList) catalogList.style.opacity = "1";
 };
 
 // COMBOS
