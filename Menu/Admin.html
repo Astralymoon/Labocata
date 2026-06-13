@@ -37,7 +37,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            z-index: 100;
+            z-index: 1000;
             border-bottom: 1px solid rgba(201,169,110,0.2);
             flex-shrink: 0;
         }
@@ -95,9 +95,12 @@
         }
         .pane-content {
             flex: 1;
-            display: flex;
+            display: none;
             flex-direction: column;
             overflow-y: auto;
+        }
+        .pane-content.active {
+            display: flex;
         }
         .pane-header {
             padding: 1rem;
@@ -109,6 +112,7 @@
             position: sticky;
             top: 0;
             z-index: 10;
+            flex-shrink: 0;
         }
         .pane-header h2 {
             font-size: 1.1rem;
@@ -190,10 +194,10 @@
         .btn-system { background: #120c06; color: var(--color-gold); }
 
         /* MODALS */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 10000; }
         .modal-overlay.active { display: flex; }
         .modal { background: white; padding: 2rem; border-radius: 8px; width: 400px; max-width: 90%; }
-</style>
+    </style>
 </head>
 <body>
     <header class="admin-nav">
@@ -205,16 +209,13 @@
     </header>
 
     <div class="workspace">
-        <!-- PANE 1: CATALOG -->
-
-
         <aside class="pane-catalog">
             <div class="pane-tabs">
                 <div class="pane-tab active" id="tab-btn-catalog" onclick="switchPaneTab('catalog')">Catálogo</div>
                 <div class="pane-tab" id="tab-btn-config" onclick="switchPaneTab('config')">Ajustes</div>
             </div>
 
-            <div id="tab-catalog" class="pane-content">
+            <div id="tab-catalog" class="pane-content active">
                 <div class="pane-header">
                     <h2>Platillos</h2>
                     <button class="btn btn-primary" onclick="resetEditor()">+ Nuevo</button>
@@ -222,7 +223,7 @@
                 <div class="catalog-list" id="admin-catalog-list"></div>
             </div>
 
-            <div id="tab-config" class="pane-content" style="display: none;">
+            <div id="tab-config" class="pane-content">
                 <div class="pane-header">
                     <h2>Categorías</h2>
                     <button class="btn btn-ghost" onclick="openCategoryModal()">+</button>
@@ -245,9 +246,6 @@
             </div>
         </aside>
 
-
-
-        <!-- PANE 2: EDITOR -->
         <main class="pane-editor">
             <div class="pane-header">
                 <h2 id="editor-title">Nuevo Platillo</h2>
@@ -260,7 +258,6 @@
             <div class="editor-content">
                 <form id="product-form">
                     <input type="hidden" id="dishId">
-
                     <div class="form-section">
                         <h3>Información Básica</h3>
                         <div class="field">
@@ -269,9 +266,7 @@
                         </div>
                         <div class="field">
                             <label>Categoría</label>
-                            <select id="category" onchange="toggleDrinkFields()">
-                                <!-- Loaded via JS -->
-                            </select>
+                            <select id="category" onchange="toggleDrinkFields()"></select>
                         </div>
                         <div class="field" id="drink-type-field" style="display: none;">
                             <label>Tipo de Bebida</label>
@@ -283,50 +278,39 @@
                         </div>
                         <div class="field">
                             <label>Descripción</label>
-                            <textarea id="description" rows="3" placeholder="Describe los ingredientes y el sabor..."></textarea>
+                            <textarea id="description" rows="3" placeholder="Describe los ingredientes..."></textarea>
                         </div>
                     </div>
-
                     <div class="form-section">
                         <h3>Precios y Opciones</h3>
                         <div class="field">
                             <label>Precio Base ($)</label>
                             <input type="number" id="price" placeholder="0.00">
                         </div>
-                        <div class="variants-container">
+                        <div class="variants-container" style="background:#f9f9f9; padding:1rem; border-radius:8px; border:1px dashed #ccc;">
                             <label style="font-size: 0.7rem; color: #888; display: block; margin-bottom: 0.5rem;">OPCIONES / TAMAÑOS (OPCIONAL)</label>
-                            <div id="variants-header" style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem; font-size: 0.65rem; font-weight: 800; color: #aaa; text-transform: uppercase;">
-                                <div style="flex: 1;">Opción (Ej: Con Chorizo)</div>
-                                <div style="flex: 1;">Precio ($)</div>
-                                <div style="width: 32px;"></div>
-                            </div>
-                            <div id="variants-list">
-                                <!-- Variant rows added here -->
-                            </div>
-                            <button type="button" class="btn-add-variant" onclick="addVariantRow()">+ Agregar Opción</button>
+                            <div id="variants-list"></div>
+                            <button type="button" class="btn btn-ghost" style="width:100%; margin-top:0.5rem;" onclick="addVariantRow()">+ Agregar Opción</button>
                         </div>
                     </div>
-
                     <div class="form-section">
                         <h3>Estilo y Etiquetas</h3>
                         <div class="field">
                             <label>Estilo Visual</label>
                             <select id="visual_style">
-                                <option value="auto">Automático (Basado en imagen/destacado)</option>
+                                <option value="auto">Automático</option>
                                 <option value="photo">Tarjeta con Foto</option>
                                 <option value="text">Tarjeta solo Texto</option>
-                                <option value="featured">Destacado Ancho (Full Width)</option>
+                                <option value="featured">Destacado Ancho</option>
                             </select>
                         </div>
                         <div class="field">
                             <label>Imagen (URL)</label>
-                            <input type="url" id="image" placeholder="https://images.unsplash.com/...">
+                            <input type="url" id="image" placeholder="https://...">
                         </div>
                         <div class="field">
                             <label>Etiquetas</label>
-                            <div id="tag-cloud" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">
-                                <!-- Tags toggles here -->
-                            </div>
+                            <div id="tag-cloud" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;"></div>
                         </div>
                         <div class="field" style="background: #fff8e1; padding: 1rem; border-radius: 8px; border: 1px solid #ffe082;">
                             <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 0.5rem;">
@@ -335,8 +319,7 @@
                             </label>
                             <div id="special-price-field" style="display: none;">
                                 <label style="font-size: 0.7rem;">PRECIO ESPECIAL ($)</label>
-                                <input type="number" id="special_price" placeholder="Ej: 99.00">
-                                <p style="font-size: 0.65rem; color: #856404; margin-top: 0.3rem;">Este precio se mostrará resaltado.</p>
+                                <input type="number" id="special_price" placeholder="0.00">
                             </div>
                         </div>
                     </div>
@@ -344,25 +327,15 @@
             </div>
         </main>
 
-        <!-- PANE 3: PREVIEW -->
         <section class="pane-preview">
             <div class="preview-toolbar">
                 <div style="display: flex; gap: 1rem; align-items: center;">
-                    <span style="font-size: 0.8rem; font-weight: 700; color: #666;">PREVIEW EN TIEMPO REAL</span>
-                    <select style="font-size: 0.75rem; padding: 0.2rem;" onchange="updatePreviewMode(this.value)">
-                        <option value="mobile">Vista Móvil</option>
-                        <option value="desktop">Vista Escritorio (Próximamente)</option>
-                    </select>
+                    <span style="font-size: 0.8rem; font-weight: 700; color: #666;">PREVIEW</span>
                 </div>
                 <button class="btn btn-ghost" style="font-size: 0.7rem;" onclick="refreshPreview()">Refrescar</button>
             </div>
             <div class="preview-frame-container">
-                <div class="preview-frame" id="live-preview-mount">
-                    <!-- The public menu HTML/CSS will be injected/simulated here -->
-                    <div style="padding: 2rem; text-align: center; color: #999; font-style: italic;">
-                        Cargando preview...
-                    </div>
-                </div>
+                <div class="preview-frame" id="live-preview-mount"></div>
             </div>
         </section>
     </div>
@@ -370,11 +343,8 @@
     <!-- Modals -->
     <div id="category-modal" class="modal-overlay">
         <div class="modal">
-            <h2 id="cat-modal-title">Nueva Categoría</h2>
-            <div class="field">
-                <label>Nombre</label>
-                <input type="text" id="new-cat-name" placeholder="Ej: Especiales">
-            </div>
+            <h2 id="cat-modal-title">Categoría</h2>
+            <div class="field"><label>Nombre</label><input type="text" id="new-cat-name"></div>
             <div style="display: flex; gap: 1rem; justify-content: flex-end;">
                 <button class="btn btn-ghost" onclick="closeModals()">Cancelar</button>
                 <button class="btn btn-primary" onclick="saveCategory()">Guardar</button>
@@ -384,62 +354,12 @@
 
     <div id="tag-modal" class="modal-overlay">
         <div class="modal">
-            <h2>Nueva Etiqueta</h2>
-            <div class="field">
-                <label>ID (corto, ej: v)</label>
-                <input type="text" id="new-tag-id" placeholder="ej: v">
-            </div>
-            <div class="field">
-                <label>Nombre (ej: Vegetariano)</label>
-                <input type="text" id="new-tag-label" placeholder="ej: Vegetariano">
-            </div>
+            <h2>Etiqueta</h2>
+            <div class="field"><label>ID</label><input type="text" id="new-tag-id"></div>
+            <div class="field"><label>Nombre</label><input type="text" id="new-tag-label"></div>
             <div style="display: flex; gap: 1rem; justify-content: flex-end;">
                 <button class="btn btn-ghost" onclick="closeModals()">Cancelar</button>
                 <button class="btn btn-primary" onclick="saveTag()">Guardar</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="combo-modal" class="modal-overlay">
-        <div class="modal" style="width: 600px; max-width: 95%;">
-            <h2>Platillo del Día (Combos)</h2>
-            <div class="field">
-                <label>Día de la semana</label>
-                <select id="combo-day" onchange="loadComboDay(this.value)">
-                    <option value="0">Domingo</option>
-                    <option value="1">Lunes</option>
-                    <option value="2">Martes</option>
-                    <option value="3">Miércoles</option>
-                    <option value="4">Jueves</option>
-                    <option value="5">Viernes</option>
-                    <option value="6">Sábado</option>
-                </select>
-            </div>
-            <div class="field">
-                <label>Título del Combo</label>
-                <input type="text" id="combo-title" placeholder="Ej: Brunch Especial">
-            </div>
-            <div class="field">
-                <label>Descripción / Texto</label>
-                <input type="text" id="combo-subtitle" placeholder="Ej: La combinación perfecta para iniciar tu semana.">
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                <div class="field">
-                    <label>Platillo 1</label>
-                    <select id="combo-dish1"></select>
-                </div>
-                <div class="field">
-                    <label>Platillo 2</label>
-                    <select id="combo-dish2"></select>
-                </div>
-            </div>
-            <div class="field">
-                <label>Precio del Combo ($)</label>
-                <input type="number" id="combo-price" placeholder="0.00">
-            </div>
-            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem;">
-                <button class="btn btn-ghost" onclick="closeModals()">Cerrar</button>
-                <button class="btn btn-primary" onclick="saveComboDay()">Guardar Día</button>
             </div>
         </div>
     </div>
