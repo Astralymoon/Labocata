@@ -11,6 +11,8 @@ let systemTags = [
     { id: "s", label: "Signature" },
     { id: "nuevo", label: "Nuevo" }
 ];
+let orderedCategoryIds = [];
+let weeklyCombos = {}; // Day (0-6) -> { title, subtitle, dish1, dish2, price }
 
 document.addEventListener("DOMContentLoaded", async () => {
     await window.auth.requireAdmin();
@@ -31,15 +33,38 @@ async function refreshData() {
     ]);
 
     allProducts = prods.data || [];
-    allCategories = cats.data || [];
+    let fetchedCategories = cats.data || [];
 
-    // Load dynamic tags from a special product record if exists
+    // Load dynamic config from a special product record if exists
     const tagsRecord = allProducts.find(p => p.name === '___SYSTEM_TAGS___');
     if (tagsRecord) {
         try {
-            systemTags = JSON.parse(tagsRecord.description);
-        } catch (e) { console.error("Error parsing system tags", e); }
+            let configText = tagsRecord.description;
+            if (configText && (configText.startsWith('{') || configText.startsWith('['))) {
+                const config = JSON.parse(configText);
+                if (Array.isArray(config)) {
+                    systemTags = config;
+                } else {
+                    systemTags = config.tags || systemTags;
+                    orderedCategoryIds = config.orderedCategoryIds || [];
+                    weeklyCombos = config.weeklyCombos || {};
+                }
+            }
+        } catch (e) { console.error("Error parsing system config", e); }
     }
+
+    // Sort categories based on stored order
+    if (orderedCategoryIds.length > 0) {
+        fetchedCategories.sort((a, b) => {
+            const indexA = orderedCategoryIds.indexOf(a.id);
+            const indexB = orderedCategoryIds.indexOf(b.id);
+            if (indexA === -1 && indexB === -1) return 0;
+            if (indexA === -1) return 1;
+            if (indexB === -1) return -1;
+            return indexA - indexB;
+        });
+    }
+    allCategories = fetchedCategories;
 
     renderCatalog();
     renderCategorySelect();
@@ -95,16 +120,31 @@ function renderCategorySelect() {
 // CATEGORY MANAGER
 function renderCategoryManager() {
     const list = document.getElementById('category-manager-list');
-    list.innerHTML = allCategories.map(cat => `
+    list.innerHTML = allCategories.map((cat, index) => `
         <div class="cat-manager-item">
             <span>${cat.name}</span>
-            <div style="display:flex; gap:0.5rem;">
+            <div style="display:flex; gap:0.25rem;">
+                <button class="btn btn-ghost" style="padding:0.2rem 0.5rem" onclick="moveCategory(${index}, -1)" ${index === 0 ? 'disabled' : ''}>↑</button>
+                <button class="btn btn-ghost" style="padding:0.2rem 0.5rem" onclick="moveCategory(${index}, 1)" ${index === allCategories.length - 1 ? 'disabled' : ''}>↓</button>
                 <button class="btn btn-ghost" style="padding:0.2rem 0.5rem" onclick="openCategoryModal('${cat.id}', '${cat.name}')">✎</button>
                 <button class="btn btn-danger" style="padding:0.2rem 0.5rem" onclick="deleteCategory('${cat.id}', '${cat.name}')">×</button>
             </div>
         </div>
     `).join('');
 }
+
+window.moveCategory = async (index, direction) => {
+    const newCategories = [...allCategories];
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= newCategories.length) return;
+
+    const [moved] = newCategories.splice(index, 1);
+    newCategories.splice(targetIndex, 0, moved);
+
+    orderedCategoryIds = newCategories.map(c => c.id);
+    await persistConfig();
+    await refreshData();
+};
 
 window.openCategoryModal = (id = "", name = "") => {
     document.getElementById('cat-modal-title').textContent = id ? "Editar Categoría" : "Nueva Categoría";
@@ -167,11 +207,16 @@ function renderTagManager() {
 
 window.openTagModal = () => document.getElementById('tag-modal').classList.add('active');
 
-async function persistTags() {
+async function persistConfig() {
     const tagsRecord = allProducts.find(p => p.name === '___SYSTEM_TAGS___');
+    const config = {
+        tags: systemTags,
+        orderedCategoryIds: orderedCategoryIds,
+        weeklyCombos: weeklyCombos
+    };
     const payload = {
         name: '___SYSTEM_TAGS___',
-        description: JSON.stringify(systemTags),
+        description: JSON.stringify(config),
         price: 0,
         category_id: allCategories[0]?.id
     };
@@ -191,7 +236,7 @@ window.saveTag = async () => {
         return;
     }
     systemTags.push({ id, label });
-    await persistTags();
+    await persistConfig();
     closeModals();
     renderTagCloud();
     renderTagManager();
@@ -199,9 +244,47 @@ window.saveTag = async () => {
 
 window.deleteTag = async (id) => {
     systemTags = systemTags.filter(t => t.id !== id);
-    await persistTags();
+    await persistConfig();
     renderTagCloud();
     renderTagManager();
+};
+
+// COMBOS
+window.openComboModal = () => {
+    const d1 = document.getElementById('combo-dish1');
+    const d2 = document.getElementById('combo-dish2');
+    const options = allProducts
+        .filter(p => p.name !== '___SYSTEM_TAGS___')
+        .map(p => `<option value="${p.id}">${p.name}</option>`)
+        .join('');
+    d1.innerHTML = `<option value="">-- Seleccionar --</option>` + options;
+    d2.innerHTML = `<option value="">-- Seleccionar --</option>` + options;
+
+    document.getElementById('combo-day').value = new Date().getDay();
+    loadComboDay(new Date().getDay());
+    document.getElementById('combo-modal').classList.add('active');
+};
+
+window.loadComboDay = (day) => {
+    const combo = weeklyCombos[day] || { title: "", subtitle: "", dish1: "", dish2: "", price: "" };
+    document.getElementById('combo-title').value = combo.title;
+    document.getElementById('combo-subtitle').value = combo.subtitle;
+    document.getElementById('combo-dish1').value = combo.dish1;
+    document.getElementById('combo-dish2').value = combo.dish2;
+    document.getElementById('combo-price').value = combo.price;
+};
+
+window.saveComboDay = async () => {
+    const day = document.getElementById('combo-day').value;
+    weeklyCombos[day] = {
+        title: document.getElementById('combo-title').value,
+        subtitle: document.getElementById('combo-subtitle').value,
+        dish1: document.getElementById('combo-dish1').value,
+        dish2: document.getElementById('combo-dish2').value,
+        price: document.getElementById('combo-price').value
+    };
+    await persistConfig();
+    alert("Día guardado correctamente.");
 };
 
 window.closeModals = () => {
@@ -227,6 +310,7 @@ function loadProduct(id) {
     document.getElementById('category').value = prod.category_id;
     document.getElementById('image').value = prod.image_url || "";
     document.getElementById('featured').checked = prod.featured;
+    document.getElementById('special-price-field').style.display = prod.featured ? 'block' : 'none';
 
     toggleDrinkFields();
 
@@ -235,12 +319,15 @@ function loadProduct(id) {
         if (prod.description.startsWith('{')) {
             const data = JSON.parse(prod.description);
             document.getElementById('description').value = data.main_description || "";
+            document.getElementById('special_price').value = data.special_price || "";
+            document.getElementById('visual_style').value = data.visual_style || "auto";
             renderVariants(data.variants || []);
             if (data.tipo_bebida) {
                 document.getElementById('drink-type').value = data.tipo_bebida;
             }
         } else {
             document.getElementById('description').value = prod.description;
+            document.getElementById('visual_style').value = "auto";
             renderVariants([]);
         }
     } catch (e) {
@@ -250,8 +337,16 @@ function loadProduct(id) {
 
     // Tags
     const tagChecks = document.querySelectorAll('input[name="tags"]');
+    let prodTags = [];
+    try {
+        if (prod.description.startsWith('{')) {
+            const data = JSON.parse(prod.description);
+            prodTags = data.tags || [];
+        }
+    } catch (e) {}
+
     tagChecks.forEach(cb => {
-        cb.checked = (prod.tags || []).includes(cb.value);
+        cb.checked = prodTags.includes(cb.value);
     });
 
     renderCatalog(); // Refresh active state
@@ -269,9 +364,9 @@ window.addVariantRow = (data = { name: "", price: "" }) => {
     const row = document.createElement('div');
     row.className = 'variant-row';
     row.innerHTML = `
-        <input type="text" placeholder="Nombre (ej: Grande)" value="${data.name}" oninput="updatePreview()">
-        <input type="number" placeholder="Precio" value="${data.price}" oninput="updatePreview()">
-        <button type="button" class="btn btn-danger" style="padding:0.2rem 0.5rem" onclick="this.parentElement.remove(); updatePreview();">×</button>
+        <input type="text" placeholder="Opción (ej: Extra Jamón)" value="${data.name}" oninput="updatePreview()">
+        <input type="number" step="0.01" placeholder="Precio" value="${data.price}" oninput="updatePreview()">
+        <button type="button" class="btn btn-danger" style="padding:0.2rem 0.5rem; width:32px;" onclick="this.parentElement.remove(); updatePreview();">×</button>
     `;
     list.appendChild(row);
 };
@@ -282,6 +377,7 @@ function resetEditor() {
     document.getElementById('product-form').reset();
     document.getElementById('dishId').value = "";
     document.getElementById('variants-list').innerHTML = "";
+    document.getElementById('visual_style').value = "auto";
     toggleDrinkFields();
     renderCatalog();
     updatePreview();
@@ -311,7 +407,9 @@ async function saveProduct() {
     const description_text = document.getElementById('description').value;
     const image_url = document.getElementById('image').value;
     const featured = document.getElementById('featured').checked;
+    const special_price = Number(document.getElementById('special_price').value);
     const drink_type = document.getElementById('drink-type').value;
+    const visual_style = document.getElementById('visual_style').value;
 
     const catSelect = document.getElementById('category');
     const catName = catSelect.options[catSelect.selectedIndex]?.text.toLowerCase() || "";
@@ -330,13 +428,16 @@ async function saveProduct() {
     // Prepare description (JSON)
     const descObj = {
         main_description: description_text,
-        variants: variants
+        variants: variants,
+        special_price: special_price || null,
+        tags: tags,
+        visual_style: visual_style
     };
     if (isDrink) descObj.tipo_bebida = drink_type;
 
     const description = JSON.stringify(descObj);
 
-    const payload = { name, price, category_id, description, image_url, featured, tags };
+    const payload = { name, price, category_id, description, image_url, featured };
 
     let res;
     if (id) {
@@ -350,6 +451,7 @@ async function saveProduct() {
     } else {
         await refreshData();
         if (!id) resetEditor();
+        else loadProduct(id);
     }
 }
 
@@ -378,8 +480,10 @@ function updatePreview() {
     const description_text = document.getElementById('description').value || "Descripción breve...";
     const image_url = document.getElementById('image').value || "";
     const featured = document.getElementById('featured').checked;
+    const special_price = Number(document.getElementById('special_price').value);
     const tags = Array.from(document.querySelectorAll('input[name="tags"]:checked')).map(cb => cb.value);
     const drink_type = document.getElementById('drink-type').value;
+    const visual_style = document.getElementById('visual_style').value;
 
     const variantRows = document.querySelectorAll('.variant-row');
     const variants = Array.from(variantRows).map(row => {
@@ -391,7 +495,13 @@ function updatePreview() {
     const catName = catSelect.options[catSelect.selectedIndex]?.text.toLowerCase() || "";
     const isDrink = catName.includes('bebida');
 
-    const descObj = { main_description: description_text, variants };
+    const descObj = {
+        main_description: description_text,
+        variants,
+        special_price: special_price || null,
+        tags: tags,
+        visual_style: visual_style
+    };
     if (isDrink) descObj.tipo_bebida = drink_type;
 
     const virtualProduct = {
@@ -401,7 +511,6 @@ function updatePreview() {
         description: JSON.stringify(descObj),
         image_url,
         featured,
-        tags,
         category_id: document.getElementById('category').value
     };
 
@@ -417,8 +526,14 @@ window.updatePreviewMode = (val) => {
     const frame = document.querySelector('.preview-frame');
     if (val === 'mobile') {
         frame.style.width = '450px';
+        frame.style.minHeight = '800px';
+        frame.style.borderRadius = '20px';
+        frame.style.border = '8px solid #333';
     } else {
         frame.style.width = '100%';
+        frame.style.minHeight = '100%';
+        frame.style.borderRadius = '0';
+        frame.style.border = 'none';
     }
 };
 

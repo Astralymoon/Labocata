@@ -30,13 +30,14 @@
             font-family: 'Cormorant Garamond', serif;
         }
         .admin-nav {
-            background: #1a1a1a;
+            background: #120c06;
             color: white;
             padding: 0.75rem 1.5rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
             z-index: 100;
+            border-bottom: 1px solid rgba(201,169,110,0.2);
         }
         .admin-nav h1 {
             font-family: 'Cormorant Garamond', serif;
@@ -105,25 +106,32 @@
             margin-bottom: 1rem;
         }
         .cat-item {
-            padding: 0.6rem 0.8rem;
-            border-radius: 6px;
+            padding: 0.8rem;
+            border-bottom: 1px solid #eee;
             cursor: pointer;
-            font-size: 0.9rem;
+            font-family: 'Syne', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
             display: flex;
             justify-content: space-between;
             align-items: center;
             transition: all 0.2s;
+            color: #555;
         }
-        .cat-item:hover { background: #eee; }
-        .cat-item.active { background: var(--color-gold); color: white; }
+        .cat-item:hover { background: #fdfdfd; color: var(--color-gold); }
+        .cat-item.active { background: #fff; color: var(--color-gold); border-left: 3px solid var(--color-gold); }
         .product-item {
-            padding: 0.5rem 0.8rem 0.5rem 1.5rem;
-            font-size: 0.85rem;
+            padding: 0.7rem 0.8rem 0.7rem 1.5rem;
+            font-size: 0.9rem;
             cursor: pointer;
+            border-bottom: 1px solid #f9f9f9;
             border-left: 2px solid transparent;
+            transition: all 0.2s;
         }
-        .product-item:hover { background: #f0f0f0; border-left-color: var(--color-gold); }
-        .product-item.active { background: #fff; border-left-color: var(--color-gold); font-weight: 600; }
+        .product-item:hover { background: #fff; border-left-color: var(--color-gold); color: var(--color-gold); }
+        .product-item.active { background: #fff; border-left-color: var(--color-gold); font-weight: 600; box-shadow: inset 4px 0 0 var(--color-gold); }
 
         /* PANE 2: EDITOR */
         .pane-editor {
@@ -312,6 +320,13 @@
                 <div id="tag-manager-list" style="padding: 0.5rem;">
                     <!-- Loaded via JS -->
                 </div>
+
+                <div class="pane-header" style="border-top: 1px solid #ddd; margin-top: 1rem;">
+                    <h2>Platillo del Día</h2>
+                </div>
+                <div id="combo-manager-list" style="padding: 0.5rem;">
+                    <button class="btn btn-ghost" style="width: 100%; font-size: 0.75rem;" onclick="openComboModal()">Configurar Combos Semanales</button>
+                </div>
             </div>
         </aside>
 
@@ -356,22 +371,36 @@
                     </div>
 
                     <div class="form-section">
-                        <h3>Precios y Variantes</h3>
+                        <h3>Precios y Opciones</h3>
                         <div class="field">
                             <label>Precio Base ($)</label>
                             <input type="number" id="price" placeholder="0.00">
                         </div>
                         <div class="variants-container">
-                            <label style="font-size: 0.7rem; color: #888; display: block; margin-bottom: 0.5rem;">VARIANTES (OPCIONAL)</label>
+                            <label style="font-size: 0.7rem; color: #888; display: block; margin-bottom: 0.5rem;">OPCIONES / TAMAÑOS (OPCIONAL)</label>
+                            <div id="variants-header" style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem; font-size: 0.65rem; font-weight: 800; color: #aaa; text-transform: uppercase;">
+                                <div style="flex: 1;">Opción (Ej: Con Chorizo)</div>
+                                <div style="flex: 1;">Precio ($)</div>
+                                <div style="width: 32px;"></div>
+                            </div>
                             <div id="variants-list">
                                 <!-- Variant rows added here -->
                             </div>
-                            <button type="button" class="btn-add-variant" onclick="addVariantRow()">+ Agregar Tamaño/Versión</button>
+                            <button type="button" class="btn-add-variant" onclick="addVariantRow()">+ Agregar Opción</button>
                         </div>
                     </div>
 
                     <div class="form-section">
-                        <h3>Visuales y Etiquetas</h3>
+                        <h3>Estilo y Etiquetas</h3>
+                        <div class="field">
+                            <label>Estilo Visual</label>
+                            <select id="visual_style">
+                                <option value="auto">Automático (Basado en imagen/destacado)</option>
+                                <option value="photo">Tarjeta con Foto</option>
+                                <option value="text">Tarjeta solo Texto</option>
+                                <option value="featured">Destacado Ancho (Full Width)</option>
+                            </select>
+                        </div>
                         <div class="field">
                             <label>Imagen (URL)</label>
                             <input type="url" id="image" placeholder="https://images.unsplash.com/...">
@@ -382,11 +411,16 @@
                                 <!-- Tags toggles here -->
                             </div>
                         </div>
-                        <div class="field">
-                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                                <input type="checkbox" id="featured">
-                                <span style="font-size: 0.9rem; text-transform: none; color: #333;">Platillo del Día / Destacado</span>
+                        <div class="field" style="background: #fff8e1; padding: 1rem; border-radius: 8px; border: 1px solid #ffe082;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 0.5rem;">
+                                <input type="checkbox" id="featured" onchange="document.getElementById('special-price-field').style.display = this.checked ? 'block' : 'none'">
+                                <span style="font-size: 0.9rem; text-transform: none; color: #333; font-weight: 700;">Destacar en su sección</span>
                             </label>
+                            <div id="special-price-field" style="display: none;">
+                                <label style="font-size: 0.7rem;">PRECIO ESPECIAL ($)</label>
+                                <input type="number" id="special_price" placeholder="Ej: 99.00">
+                                <p style="font-size: 0.65rem; color: #856404; margin-top: 0.3rem;">Este precio se mostrará resaltado.</p>
+                            </div>
                         </div>
                     </div>
                 </form>
@@ -449,10 +483,53 @@
         </div>
     </div>
 
+    <div id="combo-modal" class="modal-overlay">
+        <div class="modal" style="width: 600px; max-width: 95%;">
+            <h2>Platillo del Día (Combos)</h2>
+            <div class="field">
+                <label>Día de la semana</label>
+                <select id="combo-day" onchange="loadComboDay(this.value)">
+                    <option value="0">Domingo</option>
+                    <option value="1">Lunes</option>
+                    <option value="2">Martes</option>
+                    <option value="3">Miércoles</option>
+                    <option value="4">Jueves</option>
+                    <option value="5">Viernes</option>
+                    <option value="6">Sábado</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Título del Combo</label>
+                <input type="text" id="combo-title" placeholder="Ej: Brunch Especial">
+            </div>
+            <div class="field">
+                <label>Descripción / Texto</label>
+                <input type="text" id="combo-subtitle" placeholder="Ej: La combinación perfecta para iniciar tu semana.">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="field">
+                    <label>Platillo 1</label>
+                    <select id="combo-dish1"></select>
+                </div>
+                <div class="field">
+                    <label>Platillo 2</label>
+                    <select id="combo-dish2"></select>
+                </div>
+            </div>
+            <div class="field">
+                <label>Precio del Combo ($)</label>
+                <input type="number" id="combo-price" placeholder="0.00">
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem;">
+                <button class="btn btn-ghost" onclick="closeModals()">Cerrar</button>
+                <button class="btn btn-primary" onclick="saveComboDay()">Guardar Día</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-init.js"></script>
     <script src="auth.js"></script>
-    <!-- We will need a specific admin-logic.js to handle the workspace -->
     <script src="admin-workspace.js"></script>
 </body>
 </html>
