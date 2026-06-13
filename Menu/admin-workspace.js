@@ -101,12 +101,19 @@ function renderCatalog() {
         allProducts.filter(p => p.category_id === cat.id && p.name !== '___SYSTEM_TAGS___').forEach(prod => {
             const pItem = document.createElement('div');
             pItem.className = 'product-item';
-            if (prod.id === document.getElementById('dishId').value) pItem.classList.add('active');
-            pItem.innerHTML = `
-                ${prod.name}
-                ${prod.featured ? '<span class="status-badge featured">★</span>' : ''}
-            `;
-            pItem.onclick = () => loadProduct(prod.id);
+
+            // Check if it's a legacy marker
+            if (prod.name.startsWith('---') && prod.name.endsWith('---')) {
+                pItem.classList.add('legacy-category');
+                pItem.innerHTML = prod.name.replace(/-/g, '');
+            } else {
+                if (prod.id === document.getElementById('dishId').value) pItem.classList.add('active');
+                pItem.innerHTML = `
+                    ${prod.name}
+                    ${prod.featured ? '<span class="status-badge featured">★</span>' : ''}
+                `;
+                pItem.onclick = () => loadProduct(prod.id);
+            }
             group.appendChild(pItem);
         });
 
@@ -507,7 +514,7 @@ function updatePreview() {
     if (isDrink) descObj.tipo_bebida = drink_type;
 
     const virtualProduct = {
-        id: 'preview-id',
+        id: id || 'preview-id',
         name,
         price,
         description: JSON.stringify(descObj),
