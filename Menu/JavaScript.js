@@ -148,15 +148,16 @@ function parseVariants(product) {
         tipo_bebida: data.tipo_bebida || null,
         special_price: data.special_price || null,
         tags: data.tags || [],
-        visual_style: data.visual_style || "auto"
+        visual_style: data.visual_style || "auto",
+        featured_text: data.featured_text || null
       };
     }
   } catch (e) {}
-  return { desc: description || "", variants: [], tipo_bebida: null, special_price: null, tags: [], visual_style: "auto" };
+  return { desc: description || "", variants: [], tipo_bebida: null, special_price: null, tags: [], visual_style: "auto", featured_text: null };
 }
 
 function renderProductCard(product) {
-  const { desc, variants, special_price, tags, visual_style } = parseVariants(product);
+  const { desc, variants, special_price, tags, visual_style, featured_text } = parseVariants(product);
   const qtyId = `qty-prod-${product.id}`;
   const hasImage = Boolean(product.image_url);
   const isFeatured = product.featured;
@@ -195,12 +196,14 @@ function renderProductCard(product) {
 
   const originalPriceHtml = special_price ? `<span class="old-price">$${Number(product.price).toLocaleString("es-MX")}</span>` : "";
 
+  const featuredBadgeText = featured_text || "Recomendado";
+
   card.innerHTML = `
-    ${(styleClass !== 'text-card' && hasImage) ? `<div class="item-photo"><img src="${escapeHtml(product.image_url)}" alt="${escapeHtml(product.name)}" loading="lazy" /></div>` : ""}
+    ${(styleClass !== 'text-card' && hasImage) ? `<div class="item-photo"><img src="${escapeHtml(product.image_url)}" alt="${product.name.replace(/<[^>]*>/g, '')}" loading="lazy" /></div>` : ""}
     <div class="item-body">
-      ${isFeatured ? '<span class="featured-badge">✦ &nbsp;Recomendado</span>' : ''}
+      ${isFeatured ? `<span class="featured-badge">✦ &nbsp;${escapeHtml(featuredBadgeText)}</span>` : ''}
       <div class="item-header">
-        <h3 class="item-name">${escapeHtml(product.name)}</h3>
+        <h3 class="item-name">${product.name}</h3>
         <div class="price-wrapper">
           ${originalPriceHtml}
           <span class="item-price ${special_price ? 'special' : ''}" id="price-${product.id}">$${Number(displayPrice).toLocaleString("es-MX")}</span>
