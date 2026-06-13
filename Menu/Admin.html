@@ -30,6 +30,7 @@
             font-family: 'Cormorant Garamond', serif;
         }
         .admin-nav {
+            position: relative;
             background: #120c06;
             color: white;
             padding: 0.75rem 1.5rem;
@@ -38,6 +39,7 @@
             align-items: center;
             z-index: 100;
             border-bottom: 1px solid rgba(201,169,110,0.2);
+            height: auto !important;
         }
         .admin-nav h1 {
             font-family: 'Cormorant Garamond', serif;
@@ -278,13 +280,13 @@
     </style>
 </head>
 <body>
-    <nav class="admin-nav">
+    <header class="admin-nav">
         <h1>Labocata Admin Panel</h1>
         <div class="nav-actions">
             <span id="user-email">admin@labocata.mx</span>
             <button class="btn btn-danger" onclick="window.auth.signOut()">Cerrar Sesión</button>
         </div>
-    </nav>
+    </header>
 
     <div class="workspace">
         <!-- PANE 1: CATALOG -->

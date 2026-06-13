@@ -2,19 +2,27 @@ const ZIP_MENU_DATA = {
   "categories": [
     {
       "id_extracted": "clasicos",
-      "name": "Los que nunca fallan."
+      "name": "Los que nunca fallan.",
+      "html_name": "Los que <em>nunca</em><br/>fallan.",
+      "description": "Los platillos que definen a Labocata. Recetas depuradas con el tiempo."
     },
     {
       "id_extracted": "bocadillos",
-      "name": "Para compartir."
+      "name": "Para compartir.",
+      "html_name": "Para <em>compartir.</em>",
+      "description": "Porciones para la mesa, el café largo y la buena compañía."
     },
     {
       "id_extracted": "dulce",
-      "name": "El cierre perfecto."
+      "name": "El cierre perfecto.",
+      "html_name": "El <em>cierre</em><br/>perfecto.",
+      "description": "Del horno al plato, cada mañana nuestra repostera trabaja para que valga."
     },
     {
       "id_extracted": "bebidas",
-      "name": "Bebidas"
+      "name": "Bebidas",
+      "html_name": "Para <em>despertar.</em>",
+      "description": "Café de especialidad, jugos naturales y licuados."
     }
   ],
   "products": [
@@ -30,7 +38,7 @@ const ZIP_MENU_DATA = {
         "nuevo"
       ],
       "visual_style": "featured",
-      "featured_text": "✦  La estrella de la casa"
+      "featured_text": "La estrella de la casa"
     },
     {
       "name": "Avocado <em>Toast</em>",
@@ -164,7 +172,7 @@ const ZIP_MENU_DATA = {
         "s"
       ],
       "visual_style": "featured",
-      "featured_text": "✦  Para compartir"
+      "featured_text": "Para compartir"
     },
     {
       "name": "Cheese <em>Board</em>",
@@ -342,7 +350,7 @@ const ZIP_MENU_DATA = {
         "s"
       ],
       "visual_style": "featured",
-      "featured_text": "✦  El favorito del domingo"
+      "featured_text": "El favorito del domingo"
     },
     {
       "name": "Croissant <em>de Mantequilla</em>",
@@ -549,19 +557,23 @@ async function importZipMenu() {
 
     try {
         const catMap = {};
+        const catMetadata = {};
         const categories = ZIP_MENU_DATA.categories;
         const products = ZIP_MENU_DATA.products;
 
         for (const cat of categories) {
             statusEl.textContent = `Procesando categoría: ${cat.name}`;
             const { data: existing } = await window.supabaseClient.from('categories').select('id').eq('name', cat.name);
+            let catId;
             if (existing && existing.length > 0) {
-                catMap[cat.id_extracted] = existing[0].id;
+                catId = existing[0].id;
             } else {
                 const { data: newCat, error } = await window.supabaseClient.from('categories').insert([{ name: cat.name }]).select();
                 if (error) throw error;
-                catMap[cat.id_extracted] = newCat[0].id;
+                catId = newCat[0].id;
             }
+            catMap[cat.id_extracted] = catId;
+            catMetadata[catId] = { title: cat.html_name, description: cat.description };
         }
 
         for (const prod of products) {
@@ -596,7 +608,7 @@ async function importZipMenu() {
             }
         }
 
-        // System tags
+        // System tags & Metadata
         const orderedIds = categories.map(c => catMap[c.id_extracted]);
         const config = {
             tags: [
@@ -607,6 +619,7 @@ async function importZipMenu() {
                 { id: "nuevo", label: "Nuevo" }
             ],
             orderedCategoryIds: orderedIds,
+            categoryMetadata: catMetadata,
             weeklyCombos: {}
         };
         const { data: tagsData } = await window.supabaseClient.from('products').select('id').eq('name', '___SYSTEM_TAGS___');
