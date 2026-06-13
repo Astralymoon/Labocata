@@ -527,15 +527,18 @@ window.refreshPreview = () => {
 window.updatePreviewMode = (val) => {
     const frame = document.querySelector('.preview-frame');
     if (val === 'mobile') {
-        frame.style.width = '450px';
-        frame.style.minHeight = '800px';
-        frame.style.borderRadius = '20px';
-        frame.style.border = '8px solid #333';
+        frame.classList.remove('desktop-mode');
+        // Reset inline styles if any were set by the old function
+        frame.style.width = '';
+        frame.style.minHeight = '';
+        frame.style.borderRadius = '';
+        frame.style.border = '';
     } else {
-        frame.style.width = '100%';
-        frame.style.minHeight = '100%';
-        frame.style.borderRadius = '0';
-        frame.style.border = 'none';
+        frame.classList.add('desktop-mode');
+        frame.style.width = '';
+        frame.style.minHeight = '';
+        frame.style.borderRadius = '';
+        frame.style.border = '';
     }
 };
 
