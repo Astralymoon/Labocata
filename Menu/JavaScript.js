@@ -694,18 +694,81 @@ function repeatLastOrder() {
   } catch (e) {}
 }
 
-window.confirmOrder = () => {
-  const keys = Object.keys(orderItems); if (keys.length === 0) return;
-  const orderNum = "BOC-" + Math.floor(Math.random() * 9000 + 1000); const notes = document.getElementById("orderNotes").value;
+window.confirmOrder = async () => {
+  const keys = Object.keys(orderItems);
+  if (keys.length === 0) return;
+
+  const confirmBtn = document.getElementById("confirmBtn");
+  if (confirmBtn) {
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = "Enviando…";
+  }
+
+  const orderNum      = "BOC-" + Math.floor(Math.random() * 9000 + 1000);
+  const notes         = document.getElementById("orderNotes")?.value || "";
+  const orderType     = document.getElementById("btnDelivery")?.classList.contains("active")
+    ? "delivery"
+    : "pickup";
+  const customerName    = document.getElementById("deliveryName")?.value  || "";
+  const customerPhone   = document.getElementById("deliveryPhone")?.value || "";
+  const deliveryAddress = document.getElementById("deliveryAddress")?.value || "";
+
+  const orderSnapshot = JSON.parse(JSON.stringify(orderItems));
+
+  if (window.LBOrderService) {
+    try {
+      const result = await window.LBOrderService.submitOrder({
+        orderItems: orderSnapshot,
+        orderNumber: orderNum,
+        notes,
+        orderType,
+        customerName,
+        customerPhone,
+        deliveryAddress,
+      });
+
+      if (!result.success && result.error && result.error.includes("Demasiados pedidos")) {
+        if (confirmBtn) {
+          confirmBtn.disabled = false;
+          confirmBtn.innerHTML = `
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="white" stroke-width="2">
+              <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>
+            </svg>
+            Confirmar por WhatsApp`;
+        }
+        showToast(result.error, "error");
+        return;
+      }
+    } catch (e) {
+      console.error("[confirmOrder] Supabase exception:", e);
+    }
+  }
+
   let msg = `¡Hola Labocata! 🍳 Pedido:\n\n`;
-  keys.forEach((k) => { msg += `• ${orderItems[k].qty}x ${orderItems[k].name} — $${(orderItems[k].price * orderItems[k].qty).toLocaleString("es-MX")}\n`; });
+  keys.forEach((k) => {
+    msg += `• ${orderItems[k].qty}x ${orderItems[k].name} — $${(orderItems[k].price * orderItems[k].qty).toLocaleString("es-MX")}\n`;
+  });
   const total = keys.reduce((s, k) => s + orderItems[k].price * orderItems[k].qty, 0);
   msg += `\n💰 Total (con servicio): $${Math.round(total * 1.1).toLocaleString("es-MX")}`;
-  if (notes) msg += `\n📝 Notas: ${notes}`; msg += `\n\n#${orderNum}`;
+  if (notes) msg += `\n📝 Notas: ${notes}`;
+  msg += `\n\n#${orderNum}`;
+
   window.open(`https://wa.me/529210000000?text=${encodeURIComponent(msg)}`, "_blank");
-  saveLastOrder(orderNum, JSON.parse(JSON.stringify(orderItems)), notes);
+  saveLastOrder(orderNum, orderSnapshot, notes);
   playFeedback("success");
-  document.getElementById("orderNum").textContent = "Orden #" + orderNum; document.getElementById("orderContent").style.display = "none"; document.getElementById("orderSuccess").classList.add("show");
+
+  document.getElementById("orderNum").textContent = "Orden #" + orderNum;
+  document.getElementById("orderContent").style.display = "none";
+  document.getElementById("orderSuccess").classList.add("show");
+
+  if (confirmBtn) {
+    confirmBtn.disabled = false;
+    confirmBtn.innerHTML = `
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="white" stroke-width="2">
+        <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>
+      </svg>
+      Confirmar por WhatsApp`;
+  }
 };
 
 window.resetOrder = () => {
