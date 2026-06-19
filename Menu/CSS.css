@@ -1114,18 +1114,13 @@ nav.scrolled .cart-count-badge { background: var(--gold); color: var(--espresso)
 }
 .menu-item:hover {
   background: var(--cream);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
   z-index: 2;
-  transform: translateY(-4px);
 }
 
 /* Text-only card */
-.menu-item.text-card {
-  padding: 0;
-}
-.menu-item.text-card .item-body {
-  padding: var(--sp-4);
-}
+.menu-item.text-card { padding: var(--sp-4) var(--sp-4); }
+.menu-item.text-card > * { position: relative; z-index: 1; }
 
 /* Card with photo */
 .menu-item.has-photo { padding: 0; }
@@ -1150,9 +1145,11 @@ nav.scrolled .cart-count-badge { background: var(--gold); color: var(--espresso)
 .item-body {
   padding: var(--sp-3) var(--sp-4) var(--sp-4);
   position: relative; z-index: 1;
-  background: transparent;
+  background: var(--ivory);
   flex: 1; display: flex; flex-direction: column;
+  transition: background var(--t-base) var(--ease);
 }
+.menu-item.has-photo:hover .item-body { background: var(--cream); }
 
 /* Featured card — 2 cols */
 .menu-item.featured {
@@ -1186,29 +1183,12 @@ nav.scrolled .cart-count-badge { background: var(--gold); color: var(--espresso)
 .item-name em { font-style: italic; }
 
 /* item-price — VISIBLE */
-.price-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-}
-.old-price {
-  font-family: "Syne", sans-serif;
-  font-size: 0.75rem;
-  text-decoration: line-through;
-  color: var(--warm-grey);
-  opacity: 0.7;
-  margin-bottom: -2px;
-}
 .item-price {
   font-family: "Syne", sans-serif;
   font-size: 1rem; font-weight: 700;
   letter-spacing: 0.02em;
   color: var(--espresso);
   white-space: nowrap; padding-top: 2px;
-}
-.item-price.special {
-  color: var(--bronze);
-  font-size: 1.1rem;
 }
 
 .item-header {
@@ -1937,18 +1917,12 @@ footer { background: var(--espresso); padding: var(--sp-6) var(--page-pad) var(-
 
 /* ── ANIMATIONS ── */
 .reveal {
-  opacity: 0;
-  transform: translateY(40px);
-  transition:
-    opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-    transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  opacity: 0; transform: translateY(22px);
+  transition: opacity 0.8s var(--ease), transform 0.8s var(--ease);
 }
-.reveal.visible { opacity: 1; transform: translateY(0); }
+.reveal.visible { opacity: 1; transform: none; }
 .reveal-delay-1 { transition-delay: 0.1s; }
-.reveal-delay-2 { transition-delay: 0.2s; }
-.reveal-delay-3 { transition-delay: 0.3s; }
-.reveal-delay-4 { transition-delay: 0.4s; }
-
+.reveal-delay-2 { transition-delay: 0.22s; }
 
 /* ══════════════════════════════════════════
    RESPONSIVE
@@ -2047,69 +2021,4 @@ footer { background: var(--espresso); padding: var(--sp-6) var(--page-pad) var(-
   .order-qty-num { min-width: 32px; }
   .order-footer { padding: 20px 18px 24px; }
   .order-input-row { grid-template-columns: 1fr; }
-}
-
-/* ============================================================
-   ADMIN WORKSPACE ADDITIONS
-   ============================================================ */
-
-/* Hide nav and other distractions in preview mode */
-body.is-preview #nav,
-body.is-preview footer,
-body.is-preview .admin-entry,
-body.is-preview .order-fab,
-body.is-preview .promo-band {
-  display: none !important;
-}
-
-body.is-preview .menu-hero {
-  height: 400px;
-}
-
-body.is-preview .menu-body {
-  padding-top: 2rem;
-}
-
-/* Variant buttons in menu items */
-.item-variants {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 10px;
-  margin-bottom: 15px;
-}
-
-.variant-btn {
-  background: var(--cream);
-  border: 1px solid rgba(155,111,62,0.2);
-  color: var(--warm-grey);
-  padding: 5px 10px;
-  font-family: "Syne", sans-serif;
-  font-size: 0.65rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: all var(--t-fast) var(--ease);
-}
-
-.variant-btn:hover {
-  background: var(--ivory-dim);
-  color: var(--espresso);
-}
-
-.variant-btn.active {
-  background: var(--espresso);
-  color: var(--gold);
-  border-color: var(--espresso);
-  box-shadow: var(--shadow-xs);
-}
-
-/* Fix for featured items in mobile preview */
-@media (max-width: 480px) {
-  .menu-item.featured {
-    grid-template-columns: 1fr;
-  }
-  .menu-item.featured .item-photo {
-    height: 200px;
-  }
 }
