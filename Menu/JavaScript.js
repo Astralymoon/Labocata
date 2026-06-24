@@ -36,11 +36,18 @@ function applyMenuFilter(btn) {
 
   if (f === "all") return;
 
+  // Debug: log what we're filtering and what data-cats exist
+  const allHeaders = document.querySelectorAll(".cat-header:not(.bebidas-subheader)");
+  const allGrids   = document.querySelectorAll(".menu-grid:not(.bebidas-grid)");
+  console.log(`[filter] Looking for cat="${f}"`);
+  console.log(`[filter] Found ${allHeaders.length} headers:`, [...allHeaders].map(h => h.dataset.cat));
+  console.log(`[filter] Found ${allGrids.length} grids:`,   [...allGrids].map(g => g.dataset.cat));
+
   // Hide non-matching food categories
-  document.querySelectorAll(".cat-header:not(.bebidas-subheader)").forEach(h => {
+  allHeaders.forEach(h => {
     h.style.display = h.dataset.cat === f ? "" : "none";
   });
-  document.querySelectorAll(".menu-grid:not(.bebidas-grid)").forEach(g => {
+  allGrids.forEach(g => {
     g.style.display = g.dataset.cat === f ? "" : "none";
   });
 
@@ -58,7 +65,12 @@ function applyDrinkFilter(btn) {
   const f = btn.dataset.drinkFilter;
 
   document.querySelectorAll(".bebidas-grid").forEach(grid => {
-    const show = f === "todas" || grid.dataset.drinkCat === f;
+    const drinkCat = grid.dataset.drinkCat;
+    // "todas" tab shows all grids including the unclassified "todas" bucket
+    // specific tabs show their own grid + always show unclassified bucket
+    const show = f === "todas"
+      || drinkCat === f
+      || drinkCat === "todas";   // unclassified always visible
     grid.style.display = show ? "" : "none";
     const hdr = grid.previousElementSibling;
     if (hdr && hdr.classList.contains("bebidas-subheader"))
@@ -312,23 +324,32 @@ async function renderMenu() {
     );
 
     if (isBebidas) {
-      // Split drinks by tipo_bebida
-      [
-        { id:"caliente", label:"Calientes"        },
-        { id:"fria",     label:"Frías"             },
-        { id:"jugo",     label:"Jugos & Licuados"  }
-      ].forEach(type => {
-        const tp = catProds.filter(p => parseVariants(p).tipo_bebida === type.id);
+      // Group drinks by tipo_bebida. Unclassified go into a "todas" bucket shown always.
+      const drinkTypes = [
+        { id:"caliente", label:"Calientes"       },
+        { id:"fria",     label:"Frías"            },
+        { id:"jugo",     label:"Jugos & Licuados" },
+        { id:"todas",    label:"Bebidas"          }   // catch-all for unclassified
+      ];
+
+      drinkTypes.forEach(type => {
+        let tp;
+        if (type.id === "todas") {
+          // Only drinks with no tipo_bebida assigned
+          tp = catProds.filter(p => !parseVariants(p).tipo_bebida);
+        } else {
+          tp = catProds.filter(p => parseVariants(p).tipo_bebida === type.id);
+        }
         if (!tp.length) return;
 
         const hdr = document.createElement("div");
         hdr.className = "cat-header bebidas-subheader reveal";
-        hdr.innerHTML = `<div><span class="cat-num">Bebidas — ${type.label}</span>
+        hdr.innerHTML = `<div><span class="cat-num">Bebidas</span>
                          <h2 class="cat-title">${type.label}</h2></div>`;
 
         const grid = document.createElement("div");
-        grid.className          = "menu-grid bebidas-grid";
-        grid.dataset.drinkCat   = type.id;
+        grid.className        = "menu-grid bebidas-grid";
+        grid.dataset.drinkCat = type.id;
 
         tp.forEach((p, i) => {
           const c = renderProductCard(p);
@@ -339,28 +360,6 @@ async function renderMenu() {
         bebidasGrids.appendChild(hdr);
         bebidasGrids.appendChild(grid);
       });
-
-      // Drinks without tipo_bebida
-      const other = catProds.filter(p => !parseVariants(p).tipo_bebida);
-      if (other.length) {
-        const hdr = document.createElement("div");
-        hdr.className = "cat-header bebidas-subheader reveal";
-        hdr.innerHTML = `<div><span class="cat-num">Bebidas</span>
-                         <h2 class="cat-title">Otras bebidas</h2></div>`;
-
-        const grid = document.createElement("div");
-        grid.className        = "menu-grid bebidas-grid";
-        grid.dataset.drinkCat = "todas";
-
-        other.forEach((p, i) => {
-          const c = renderProductCard(p);
-          if (i % 5 > 0) c.classList.add(`reveal-delay-${i%5}`);
-          grid.appendChild(c);
-        });
-
-        bebidasGrids.appendChild(hdr);
-        bebidasGrids.appendChild(grid);
-      }
 
     } else {
       // Food category
