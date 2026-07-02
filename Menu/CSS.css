@@ -2022,3 +2022,79 @@ footer { background: var(--espresso); padding: var(--sp-6) var(--page-pad) var(-
   .order-footer { padding: 20px 18px 24px; }
   .order-input-row { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   LABOCATA — Hover unificado para todas las tarjetas
+   Agregar al FINAL de CSS.css
+   ============================================================ */
+
+/* ── Reset: quitar todas las reglas de hover anteriores ── */
+.menu-item,
+.menu-item.text-card,
+.menu-item.has-photo,
+.menu-item.featured {
+  transition:
+    box-shadow 0.30s cubic-bezier(0.25,0.46,0.45,0.94),
+    transform  0.30s cubic-bezier(0.25,0.46,0.45,0.94),
+    background 0.30s cubic-bezier(0.25,0.46,0.45,0.94);
+  will-change: transform;
+}
+
+/* ── Hover ÚNICO para todas las tarjetas de comida ── */
+.menu-item:hover {
+  background: var(--cream);
+  box-shadow: 0 6px 20px rgba(26,18,8,0.12);
+  transform: translateY(-4px);
+  z-index: 2;
+}
+
+/* ── item-body: mismo fondo en hover para todos los tipos ── */
+.menu-item:hover .item-body {
+  background: var(--cream);
+}
+
+/* ── Imagen: mismo zoom en hover para todos ── */
+.menu-item:hover .item-photo img {
+  transform: scale(1.05);
+  filter: brightness(0.97) contrast(1.04) saturate(0.94) sepia(0.03);
+}
+
+/* ── Featured: anular el translateY porque es 2 columnas ──
+   (el lift visual se da con shadow solamente)            ── */
+.menu-item.featured:hover {
+  transform: translateY(-4px);
+}
+.menu-item.featured:hover .item-body {
+  background: #ede8dc;
+}
+
+/* ── Bebidas: exactamente igual que comida ── */
+.menu-grid.bebidas-grid .menu-item,
+.drink-cat-grid .menu-item {
+  transition:
+    box-shadow 0.30s cubic-bezier(0.25,0.46,0.45,0.94),
+    transform  0.30s cubic-bezier(0.25,0.46,0.45,0.94),
+    background 0.30s cubic-bezier(0.25,0.46,0.45,0.94);
+}
+
+.menu-grid.bebidas-grid .menu-item:hover,
+.drink-cat-grid .menu-item:hover {
+  background: var(--cream);
+  box-shadow: 0 6px 20px rgba(26,18,8,0.12);
+  transform: translateY(-4px);
+  z-index: 2;
+}
+
+.menu-grid.bebidas-grid .menu-item:hover .item-body,
+.drink-cat-grid .menu-item:hover .item-body {
+  background: var(--cream);
+}
+
+.menu-grid.bebidas-grid .menu-item:hover .item-photo img,
+.drink-cat-grid .menu-item:hover .item-photo img {
+  transform: scale(1.05);
+  filter: brightness(0.97) contrast(1.04) saturate(0.94) sepia(0.03);
+}
+
+/* ── Cursor pointer en todas ── */
+.menu-item { cursor: pointer; }
