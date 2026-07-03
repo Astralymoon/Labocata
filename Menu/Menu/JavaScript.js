@@ -14,47 +14,33 @@ function stripHtml(v = "") {
   return String(v).replace(/<[^>]*>/g, "").trim();
 }
 
-// ===== FILTER — Platillos =====
-// Always query live DOM so filters work after renderMenu builds elements
+// ===== FILTER — Comida =====
+// Siempre consulta el DOM en vivo, nunca usa variables cacheadas
 function applyMenuFilter(btn) {
+  // Marcar botón activo
   document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
-  const f = btn.dataset.filter;
 
-  // Reset everything visible
-  document.querySelectorAll(".cat-header:not(.bebidas-subheader)").forEach(h => h.style.display = "");
-  document.querySelectorAll(".menu-grid:not(.bebidas-grid)").forEach(g => g.style.display = "");
-  document.querySelectorAll("#menu-categories-container .menu-item").forEach(i => i.style.display = "");
+  const catId = btn.dataset.catId; // UUID de Supabase
 
-  // Bebidas always visible
-  const bebidasSection   = document.querySelector(".bebidas-section");
-  const bebidasFilterBar = document.getElementById("bebidasFilterBar");
-  const bebidasGridsEl   = document.getElementById("bebidasGrids");
-  if (bebidasSection)   bebidasSection.style.display   = "";
-  if (bebidasFilterBar) bebidasFilterBar.style.display = "";
-  if (bebidasGridsEl)   bebidasGridsEl.style.display   = "";
+  // Mostrar todo primero
+  document.querySelectorAll(".food-cat-header").forEach(h => h.style.display = "");
+  document.querySelectorAll(".food-cat-grid").forEach(g => g.style.display = "");
 
-  if (f === "all") return;
+  if (catId === "all") return;
 
-  // Debug: log what we're filtering and what data-cats exist
-  const allHeaders = document.querySelectorAll(".cat-header:not(.bebidas-subheader)");
-  const allGrids   = document.querySelectorAll(".menu-grid:not(.bebidas-grid)");
-  console.log(`[filter] Looking for cat="${f}"`);
-  console.log(`[filter] Found ${allHeaders.length} headers:`, [...allHeaders].map(h => h.dataset.cat));
-  console.log(`[filter] Found ${allGrids.length} grids:`,   [...allGrids].map(g => g.dataset.cat));
-
-  // Hide non-matching food categories
-  allHeaders.forEach(h => {
-    h.style.display = h.dataset.cat === f ? "" : "none";
+  // Ocultar los que no coincidan
+  document.querySelectorAll(".food-cat-header").forEach(h => {
+    h.style.display = h.dataset.catId === catId ? "" : "none";
   });
-  allGrids.forEach(g => {
-    g.style.display = g.dataset.cat === f ? "" : "none";
+  document.querySelectorAll(".food-cat-grid").forEach(g => {
+    g.style.display = g.dataset.catId === catId ? "" : "none";
   });
 
-  // Scroll to section
+  // Scroll suave a la sección
   setTimeout(() => {
-    const first = document.querySelector(`.cat-header:not(.bebidas-subheader)[data-cat="${f}"]`);
-    if (first) first.scrollIntoView({ behavior: "smooth", block: "start" });
+    const target = document.querySelector(`.food-cat-header[data-cat-id="${catId}"]`);
+    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
   }, 50);
 }
 
@@ -62,23 +48,19 @@ function applyMenuFilter(btn) {
 function applyDrinkFilter(btn) {
   document.querySelectorAll(".bebidas-filter-btn").forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
-  const f = btn.dataset.drinkFilter;
 
-  document.querySelectorAll(".bebidas-grid").forEach(grid => {
-    const drinkCat = grid.dataset.drinkCat;
-    // "todas" tab shows all grids including the unclassified "todas" bucket
-    // specific tabs show their own grid + always show unclassified bucket
-    const show = f === "todas"
-      || drinkCat === f
-      || drinkCat === "todas";   // unclassified always visible
+  const tipo = btn.dataset.tipo; // "todas" | "caliente" | "fria" | "jugo"
+
+  document.querySelectorAll(".drink-cat-grid").forEach(grid => {
+    const show = tipo === "todas" || grid.dataset.tipo === tipo;
     grid.style.display = show ? "" : "none";
     const hdr = grid.previousElementSibling;
-    if (hdr && hdr.classList.contains("bebidas-subheader"))
+    if (hdr && hdr.classList.contains("drink-cat-header"))
       hdr.style.display = show ? "" : "none";
   });
 }
 
-// ===== DATA / PARSE =====
+// ===== DATOS =====
 const defaultMenuTags = [
   { id:"v",     label:"Vegetariano" },
   { id:"vg",    label:"Vegano"      },
@@ -91,7 +73,7 @@ let currentWeeklyCombos = {};
 let currentCategoryMeta = {};
 let currentCategories   = [];
 
-function parseVariants(product) {
+function parseDesc(product) {
   try {
     if (product.description && product.description.startsWith("{")) {
       const d = JSON.parse(product.description);
@@ -106,27 +88,27 @@ function parseVariants(product) {
       };
     }
   } catch(e) {}
-  return { desc: product.description||"", variants:[], tipo_bebida:null,
-           special_price:null, tags:[], visual_style:"auto", featured_text:null };
+  return { desc: product.description || "", variants: [], tipo_bebida: null,
+           special_price: null, tags: [], visual_style: "auto", featured_text: null };
 }
 
-function renderTagSpans(tags=[]) {
-  const map = currentMenuTags.reduce((m,t) => { m[t.id]=t.label; return m; }, {});
+function renderTagSpans(tags = []) {
+  const map = currentMenuTags.reduce((m, t) => { m[t.id] = t.label; return m; }, {});
   return tags.map(tag => {
-    const cls = currentMenuTags.some(t => t.id===tag) ? tag : "custom";
-    return `<span class="item-tag ${cls}">${escapeHtml(map[tag]||tag)}</span>`;
+    const cls = currentMenuTags.some(t => t.id === tag) ? tag : "custom";
+    return `<span class="item-tag ${cls}">${escapeHtml(map[tag] || tag)}</span>`;
   }).join("");
 }
 
-// ===== RENDER PRODUCT CARD =====
+// ===== RENDER PRODUCTO =====
 function renderProductCard(product) {
-  const { desc, variants, special_price, tags, visual_style, featured_text } = parseVariants(product);
-  const qtyId     = `qty-prod-${product.id}`;
+  const { desc, variants, special_price, tags, visual_style, featured_text } = parseDesc(product);
+  const qtyId     = `qty-${product.id}`;
   const hasImage  = Boolean(product.image_url);
   const isFeat    = product.featured;
   const plainName = stripHtml(product.name);
 
-  // Card style
+  // Estilo de tarjeta
   let styleClass = "text-card";
   if      (visual_style === "featured") styleClass = "featured";
   else if (visual_style === "photo")    styleClass = "has-photo";
@@ -134,7 +116,7 @@ function renderProductCard(product) {
   else if (isFeat)                      styleClass = "featured";
   else if (hasImage)                    styleClass = "has-photo";
 
-  // Price & name for order
+  // Precio e nombre inicial para la orden
   let displayPrice = Number(special_price || product.price);
   let initialName  = plainName;
   if (variants.length > 0) {
@@ -151,26 +133,26 @@ function renderProductCard(product) {
     : "";
 
   const variantHtml = variants.length > 0
-    ? `<div class="item-variants">${variants.map((v,i) =>
+    ? `<div class="item-variants">${variants.map((v, i) =>
         `<button class="variant-btn${i===0?" active":""}" data-vname="${escapeHtml(v.name)}" data-vprice="${v.price}">
            ${escapeHtml(v.name)} ($${v.price})
          </button>`).join("")}</div>`
     : "";
 
   const card = document.createElement("div");
-  card.className    = `menu-item reveal ${styleClass}`;
-  card.id           = `prod-${product.id}`;
-  card.dataset.cat  = product.category_id;
+  card.className   = `menu-item reveal ${styleClass}`;
+  card.id          = `prod-${product.id}`;
+  card.dataset.cat = product.category_id;
 
   card.innerHTML = `
     ${imageHtml}
     <div class="item-body">
-      ${isFeat ? `<span class="featured-badge">✦ &nbsp;${escapeHtml(featured_text||"Recomendado")}</span>` : ""}
+      ${isFeat ? `<span class="featured-badge">✦ &nbsp;${escapeHtml(featured_text || "Recomendado")}</span>` : ""}
       <div class="item-header">
         <h3 class="item-name">${product.name}</h3>
         <div class="price-wrapper">
           ${oldPriceHtml}
-          <span class="item-price${special_price?" special":""}" id="price-${product.id}">
+          <span class="item-price${special_price ? " special" : ""}" id="price-${product.id}">
             $${displayPrice.toLocaleString("es-MX")}
           </span>
         </div>
@@ -190,19 +172,19 @@ function renderProductCard(product) {
       </div>
     </div>`;
 
-  // Add button listener
+  // Listener del botón agregar
   card.querySelector(".add-btn").addEventListener("click", function() {
     addToOrder(this, this.dataset.iname, parseFloat(this.dataset.iprice), this.dataset.qtyid);
   });
 
-  // Variant button listeners
+  // Listeners de variantes
   card.querySelectorAll(".variant-btn").forEach(vBtn => {
     vBtn.addEventListener("click", function() {
       this.closest(".item-variants").querySelectorAll(".variant-btn")
         .forEach(b => b.classList.remove("active"));
       this.classList.add("active");
-      const vName  = this.dataset.vname;
       const vPrice = parseFloat(this.dataset.vprice);
+      const vName  = this.dataset.vname;
       card.querySelector(".item-price").textContent = `$${Number(vPrice).toLocaleString("es-MX")}`;
       const ab = card.querySelector(".add-btn");
       ab.dataset.iname  = `${plainName} (${vName})`;
@@ -213,13 +195,16 @@ function renderProductCard(product) {
   return card;
 }
 
-// ===== RENDER MENU =====
+// ===== RENDER MENÚ COMPLETO =====
 async function renderMenu() {
-  const container    = document.getElementById("menu-categories-container");
-  const bebidasGrids = document.getElementById("bebidasGrids");
-  if (!container) return;
+  const foodContainer = document.getElementById("menu-categories-container");
+  const drinkContainer = document.getElementById("bebidasGrids");
+  const filterBar     = document.getElementById("filterInner");
+  const drinkBar      = document.getElementById("bebidasFilterBar");
 
-  // Fetch data
+  if (!foodContainer) return;
+
+  // Fetch datos
   const [catRes, prodRes] = await Promise.all([
     window.supabaseClient.from("categories").select("*").order("created_at", { ascending: true }),
     window.supabaseClient.from("products").select("*")
@@ -229,7 +214,7 @@ async function renderMenu() {
   const products   = prodRes.data || [];
   currentCategories = categories;
 
-  // Parse system config (tags, order, metadata, combos)
+  // Parsear config del sistema
   const sysRec = products.find(p => p.name === "___SYSTEM_TAGS___");
   if (sysRec) {
     try {
@@ -247,197 +232,208 @@ async function renderMenu() {
           return ia - ib;
         });
       }
-    } catch(e) { console.error("Error al parsear config del sistema:", e); }
+    } catch(e) { console.error("Config error:", e); }
   }
 
-  // ── Build filter nav ──────────────────────────────────────────
-  const filterInner = document.querySelector(".filter-inner");
-  if (filterInner) {
-    filterInner.innerHTML = "";
+  // Separar categorías de comida y bebida
+  const foodCats  = categories.filter(c => !c.name.toLowerCase().includes("bebida"));
+  const drinkCats = categories.filter(c =>  c.name.toLowerCase().includes("bebida"));
 
-    // "Todo el menú" button
+  // ── Construir barra de filtros de COMIDA ─────────────────────
+  if (filterBar) {
+    filterBar.innerHTML = "";
+
+    // Botón "Todo"
     const allBtn = document.createElement("button");
-    allBtn.className      = "filter-btn active";
-    allBtn.dataset.filter = "all";
-    allBtn.textContent    = "Todo el menú";
+    allBtn.className       = "filter-btn active";
+    allBtn.dataset.catId   = "all";
+    allBtn.textContent     = "Todo el menú";
     allBtn.addEventListener("click", () => applyMenuFilter(allBtn));
-    filterInner.appendChild(allBtn);
+    filterBar.appendChild(allBtn);
 
-    // One button per non-drinks category
-    categories.forEach(cat => {
-      if (cat.name.toLowerCase().includes("bebida")) return;
+    // Solo mostrar categorias que tengan productos reales
+    foodCats.forEach(cat => {
+      const hasProds = products.some(p =>
+        p.category_id === cat.id && p.name !== "___SYSTEM_TAGS___"
+      );
+      if (!hasProds) return;
+
       const div = document.createElement("div");
       div.className = "filter-divider";
-      filterInner.appendChild(div);
+      filterBar.appendChild(div);
 
       const btn = document.createElement("button");
-      btn.className         = "filter-btn";
-      btn.dataset.filter    = cat.id;   // UUID — matches grid/header data-cat
-      btn.dataset.filterName = cat.name; // human-readable backup
-      btn.textContent       = cat.name;
+      btn.className     = "filter-btn";
+      btn.dataset.catId = cat.id;
+      btn.textContent   = cat.name;
       btn.addEventListener("click", () => applyMenuFilter(btn));
-      filterInner.appendChild(btn);
+      filterBar.appendChild(btn);
     });
 
-    // Dietary legend
+    // Leyenda dietética
     const dietary = document.createElement("div");
     dietary.className = "filter-dietary";
     dietary.innerHTML = currentMenuTags.map(t =>
       `<span class="dietary-tag"><span class="diet-dot ${t.id}"></span>${t.label}</span>`
     ).join("");
-    filterInner.appendChild(dietary);
+    filterBar.appendChild(dietary);
   }
 
-  console.log("[menu] Filter nav built with categories:", categories.filter(c => !c.name.toLowerCase().includes("bebida")).map(c => `${c.name} → ${c.id}`));
-
-  // ── Build drink filter bar ────────────────────────────────────
-  const drinkBar = document.getElementById("bebidasFilterBar");
+  // ── Construir barra de filtros de BEBIDAS ────────────────────
   if (drinkBar) {
     drinkBar.innerHTML = "";
-    const drinkTypes = [
-      { id:"todas",    label:"Todas las bebidas" },
-      { id:"caliente", label:"Calientes"          },
-      { id:"fria",     label:"Frías"               },
-      { id:"jugo",     label:"Jugos & Licuados"   }
-    ];
-    drinkTypes.forEach((type, i) => {
+    [
+      { tipo: "todas",    label: "Todas" },
+      { tipo: "caliente", label: "Calientes" },
+      { tipo: "fria",     label: "Frías" },
+      { tipo: "jugo",     label: "Jugos & Licuados" }
+    ].forEach((item, i) => {
       if (i > 0) {
         const div = document.createElement("div");
         div.className = "filter-divider";
         drinkBar.appendChild(div);
       }
       const btn = document.createElement("button");
-      btn.className          = `bebidas-filter-btn${i===0?" active":""}`;
-      btn.dataset.drinkFilter = type.id;
-      btn.textContent        = type.label;
+      btn.className          = `bebidas-filter-btn${i === 0 ? " active" : ""}`;
+      btn.dataset.tipo       = item.tipo;
+      btn.textContent        = item.label;
       btn.addEventListener("click", () => applyDrinkFilter(btn));
       drinkBar.appendChild(btn);
     });
   }
 
-  // ── Clear containers ──────────────────────────────────────────
-  container.innerHTML = "";
-  if (bebidasGrids) bebidasGrids.innerHTML = "";
+  // ── Limpiar contenedores ─────────────────────────────────────
+  foodContainer.innerHTML  = "";
+  if (drinkContainer) drinkContainer.innerHTML = "";
 
-  // ── Render each category ──────────────────────────────────────
-  categories.forEach((cat, idx) => {
-    const isBebidas = cat.name.toLowerCase().includes("bebida");
-    const catProds  = products.filter(p =>
+  // ── Renderizar categorias de COMIDA ─────────────────────────
+  let foodIdx = 0;
+  foodCats.forEach((cat) => {
+    const catProds = products.filter(p =>
       p.category_id === cat.id && p.name !== "___SYSTEM_TAGS___"
     );
+    if (!catProds.length) return; // saltar categorias vacias
+    const idx = foodIdx++;
 
-    if (isBebidas) {
-      // Group drinks by tipo_bebida. Unclassified go into a "todas" bucket shown always.
-      const drinkTypes = [
-        { id:"caliente", label:"Calientes"       },
-        { id:"fria",     label:"Frías"            },
-        { id:"jugo",     label:"Jugos & Licuados" },
-        { id:"todas",    label:"Bebidas"          }   // catch-all for unclassified
+    const meta = currentCategoryMeta[cat.id] || { title: cat.name, description: "" };
+
+    // Header — usa data-cat-id (UUID)
+    const hdr = document.createElement("div");
+    hdr.className         = "cat-header food-cat-header reveal";
+    hdr.dataset.catId     = cat.id;   // ← mismo valor que el botón del filtro
+    hdr.innerHTML = `
+      <div>
+        <span class="cat-num">0${idx + 1} — ${escapeHtml(cat.name)}</span>
+        <h2 class="cat-title">${meta.title || cat.name}</h2>
+      </div>
+      ${meta.description ? `<p class="cat-desc">${escapeHtml(meta.description)}</p>` : ""}`;
+
+    // Grid — usa data-cat-id (UUID)
+    const grid = document.createElement("div");
+    grid.className     = "menu-grid food-cat-grid";
+    grid.dataset.catId = cat.id;      // ← mismo valor que el botón del filtro
+
+    catProds.forEach((p, i) => {
+      const card = renderProductCard(p);
+      if (i % 5 > 0) card.classList.add(`reveal-delay-${i % 5}`);
+      grid.appendChild(card);
+    });
+
+    foodContainer.appendChild(hdr);
+    foodContainer.appendChild(grid);
+  });
+
+  // ── Renderizar categorías de BEBIDAS ─────────────────────────
+  if (drinkContainer) {
+    drinkCats.forEach(cat => {
+      const catProds = products.filter(p =>
+        p.category_id === cat.id && p.name !== "___SYSTEM_TAGS___"
+      );
+
+      // Agrupar por tipo
+      const tipos = [
+        { tipo: "caliente", label: "Calientes" },
+        { tipo: "fria",     label: "Frías" },
+        { tipo: "jugo",     label: "Jugos & Licuados" },
+        { tipo: "otras",    label: "Bebidas" }
       ];
 
-      drinkTypes.forEach(type => {
-        let tp;
-        if (type.id === "todas") {
-          // Only drinks with no tipo_bebida assigned
-          tp = catProds.filter(p => !parseVariants(p).tipo_bebida);
-        } else {
-          tp = catProds.filter(p => parseVariants(p).tipo_bebida === type.id);
-        }
+      tipos.forEach(({ tipo, label }) => {
+        const tp = tipo === "otras"
+          ? catProds.filter(p => !parseDesc(p).tipo_bebida)
+          : catProds.filter(p => parseDesc(p).tipo_bebida === tipo);
+
         if (!tp.length) return;
 
         const hdr = document.createElement("div");
-        hdr.className = "cat-header bebidas-subheader reveal";
+        hdr.className     = "cat-header drink-cat-header bebidas-subheader reveal";
+        hdr.dataset.tipo  = tipo;
         hdr.innerHTML = `<div><span class="cat-num">Bebidas</span>
-                         <h2 class="cat-title">${type.label}</h2></div>`;
+                          <h2 class="cat-title">${label}</h2></div>`;
 
         const grid = document.createElement("div");
-        grid.className        = "menu-grid bebidas-grid";
-        grid.dataset.drinkCat = type.id;
+        grid.className    = "menu-grid drink-cat-grid bebidas-grid";
+        grid.dataset.tipo = tipo;     // ← mismo valor que el botón del filtro
 
         tp.forEach((p, i) => {
-          const c = renderProductCard(p);
-          if (i % 5 > 0) c.classList.add(`reveal-delay-${i%5}`);
-          grid.appendChild(c);
+          const card = renderProductCard(p);
+          if (i % 5 > 0) card.classList.add(`reveal-delay-${i % 5}`);
+          grid.appendChild(card);
         });
 
-        bebidasGrids.appendChild(hdr);
-        bebidasGrids.appendChild(grid);
+        drinkContainer.appendChild(hdr);
+        drinkContainer.appendChild(grid);
       });
-
-    } else {
-      // Food category
-      const meta = currentCategoryMeta[cat.id] || { title: cat.name, description: "" };
-
-      const hdr = document.createElement("div");
-      hdr.className    = "cat-header reveal";
-      hdr.dataset.cat  = cat.id;   // ← must match filter btn's data-filter
-      hdr.innerHTML = `
-        <div>
-          <span class="cat-num">0${idx+1} — ${escapeHtml(cat.name)}</span>
-          <h2 class="cat-title">${meta.title}</h2>
-        </div>
-        ${meta.description ? `<p class="cat-desc">${escapeHtml(meta.description)}</p>` : ""}`;
-
-      const grid = document.createElement("div");
-      grid.className   = "menu-grid";
-      grid.dataset.cat = cat.id;   // ← must match filter btn's data-filter
-
-      catProds.forEach((p, i) => {
-        const c = renderProductCard(p);
-        if (i % 5 > 0) c.classList.add(`reveal-delay-${i%5}`);
-        grid.appendChild(c);
-      });
-
-      container.appendChild(hdr);
-      container.appendChild(grid);
-      console.log(`[menu] Built category "${cat.name}" with id="${cat.id}", ${catProds.length} products`);
-    }
-  });
+    });
+  }
 
   // ── Spotlight ─────────────────────────────────────────────────
   const spotlightSection = document.querySelector(".menu-spotlight");
   const today = new Date().getDay();
   const combo = currentWeeklyCombos[today];
 
-  if (combo && combo.title) {
+  if (combo && combo.title && spotlightSection) {
     spotlightSection.style.display = "grid";
-    document.getElementById("spotlightTitle").innerHTML        = combo.title;
+    document.getElementById("spotlightTitle").innerHTML         = combo.title;
     document.getElementById("spotlightDescription").textContent = combo.subtitle;
     document.getElementById("spotlightTotal").textContent       = `$${Number(combo.price).toLocaleString("es-MX")}`;
     const p1 = products.find(p => p.id === combo.dish1);
-    if (p1 && p1.image_url) document.getElementById("spotlightImageOne").src = p1.image_url;
+    if (p1?.image_url) document.getElementById("spotlightImageOne").src = p1.image_url;
     const pb = spotlightSection.querySelector(".spotlight-btn.primary");
-    pb.textContent = "Agregar Combo";
-    pb.onclick = () => addToOrder(pb, stripHtml(combo.title), Number(combo.price), "spotlight-qty");
-  } else {
+    if (pb) {
+      pb.textContent = "Agregar Combo";
+      pb.onclick = () => addToOrder(pb, stripHtml(combo.title), Number(combo.price), "qty-spotlight");
+    }
+  } else if (spotlightSection) {
     const sp = products.find(p =>
-      p.featured &&
-      !categories.find(c => c.id === p.category_id)?.name.toLowerCase().includes("bebida")
+      p.featured && !categories.find(c => c.id === p.category_id)?.name.toLowerCase().includes("bebida")
     );
-    if (sp && spotlightSection) {
+    if (sp) {
       spotlightSection.style.display = "grid";
-      const { desc, special_price } = parseVariants(sp);
+      const { desc, special_price } = parseDesc(sp);
       const dp = Number(special_price || sp.price);
-      document.getElementById("spotlightTitle").innerHTML        = sp.name;
+      document.getElementById("spotlightTitle").innerHTML         = sp.name;
       document.getElementById("spotlightDescription").textContent = desc;
       document.getElementById("spotlightTotal").textContent       = `$${dp.toLocaleString("es-MX")}`;
       if (sp.image_url) document.getElementById("spotlightImageOne").src = sp.image_url;
       const pb = spotlightSection.querySelector(".spotlight-btn.primary");
-      pb.textContent = "Agregar Platillo";
-      pb.onclick = () => addToOrder(pb, stripHtml(sp.name), dp, "spotlight-qty");
-    } else if (spotlightSection) {
+      if (pb) {
+        pb.textContent = "Agregar Platillo";
+        pb.onclick = () => addToOrder(pb, stripHtml(sp.name), dp, "qty-spotlight");
+      }
+    } else {
       spotlightSection.style.display = "none";
     }
   }
 
-  // ── Activate reveal observer on new elements ──────────────────
+  // Activar animaciones reveal
   document.querySelectorAll(".reveal").forEach(el => revealObs.observe(el));
 
-  // ── Restore cart state ────────────────────────────────────────
+  // Restaurar carrito
   restoreCartUI();
 }
 
-// ===== PREVIEW (admin iframe) =====
+// ===== PREVIEW (iframe admin) =====
 window.addEventListener("message", e => {
   if (e.data.type === "PREVIEW_UPDATE") previewProduct(e.data.product);
 });
@@ -446,28 +442,15 @@ function previewProduct(product) {
   const newCard  = renderProductCard(product);
   newCard.classList.add("visible");
   newCard.style.cssText = "transition:none;opacity:1;transform:translateY(0)";
-  if (existing) {
-    existing.dataset.cat !== product.category_id
-      ? (existing.remove(), insertProductInGrid(newCard, product))
-      : existing.replaceWith(newCard);
-  } else {
-    insertProductInGrid(newCard, product);
+  if (existing) existing.replaceWith(newCard);
+  else {
+    const grid = document.querySelector(`.food-cat-grid[data-cat-id="${product.category_id}"]`);
+    if (grid) grid.prepend(newCard);
   }
-  newCard.scrollIntoView({ behavior:"smooth", block:"center" });
-}
-function insertProductInGrid(card, product) {
-  const cat      = currentCategories.find(c => c.id === product.category_id);
-  const isBebida = cat && cat.name.toLowerCase().includes("bebida");
-  const { tipo_bebida } = parseVariants(product);
-  const sel  = isBebida
-    ? `.bebidas-grid[data-drink-cat="${tipo_bebida||"todas"}"]`
-    : `.menu-grid[data-cat="${product.category_id}"]`;
-  const grid = document.querySelector(sel);
-  if (grid) grid.prepend(card);
-  else document.getElementById("menu-categories-container")?.prepend(card);
+  newCard.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
-// ===== SOUND =====
+// ===== SONIDO =====
 const addSound = new Audio("Sounds/Click.mp3");
 let audioCtx;
 function playTone(kind = "add") {
@@ -478,12 +461,12 @@ function playTone(kind = "add") {
     tones.forEach((freq, i) => {
       const o = audioCtx.createOscillator(), g = audioCtx.createGain();
       o.type = kind === "remove" ? "triangle" : "sine";
-      o.frequency.setValueAtTime(freq, now + i*0.055);
-      g.gain.setValueAtTime(0.0001,  now + i*0.055);
-      g.gain.exponentialRampToValueAtTime(0.075,  now + i*0.055 + 0.012);
-      g.gain.exponentialRampToValueAtTime(0.0001, now + i*0.055 + 0.12);
+      o.frequency.setValueAtTime(freq, now + i * 0.055);
+      g.gain.setValueAtTime(0.0001, now + i * 0.055);
+      g.gain.exponentialRampToValueAtTime(0.075,  now + i * 0.055 + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.055 + 0.12);
       o.connect(g); g.connect(audioCtx.destination);
-      o.start(now + i*0.055); o.stop(now + i*0.055 + 0.13);
+      o.start(now + i * 0.055); o.stop(now + i * 0.055 + 0.13);
     });
   } catch(e) {}
 }
@@ -492,8 +475,8 @@ function playFeedback(kind = "add") {
   playTone(kind);
 }
 
-// ===== ORDER STATE =====
-let orderItems = {};   // { [plainName]: { name, price, qty } }
+// ===== ESTADO DEL CARRITO =====
+let orderItems = {};
 let orderOpen  = false;
 
 function saveCartToStorage() {
@@ -506,7 +489,7 @@ function loadCartFromStorage() {
   } catch(e) { orderItems = {}; }
 }
 
-// Re-connect qty controls after renderMenu (page reload fix)
+// Restaurar controles de cantidad tras renderMenu (fix recarga de página)
 function restoreCartUI() {
   if (!Object.keys(orderItems).length) return;
   document.querySelectorAll(".add-btn").forEach(btn => {
@@ -544,13 +527,10 @@ function showToast(name, action = "agregado") {
 function addToOrder(btn, name, price, qtyId) {
   name  = stripHtml(name);
   price = parseFloat(price) || 0;
-
   playFeedback("add");
   if (navigator.vibrate) navigator.vibrate(30);
-
   if (orderItems[name]) orderItems[name].qty++;
   else orderItems[name] = { name, price, qty: 1 };
-
   const qtyEl = document.getElementById(qtyId);
   if (qtyEl) {
     btn.style.display = "none";
@@ -580,8 +560,7 @@ window.changeQty = (name, delta, qtyId) => {
     const el = document.getElementById(qtyId);
     if (el) {
       el.classList.remove("visible"); el.innerHTML = "";
-      el.closest(".menu-item,.bebida-item")?.querySelector(".add-btn")
-        ?.style.setProperty("display", "");
+      el.closest(".menu-item")?.querySelector(".add-btn")?.style.setProperty("display", "");
     }
   } else {
     const el = document.getElementById(qtyId);
@@ -590,27 +569,26 @@ window.changeQty = (name, delta, qtyId) => {
   updateCart(); saveCartToStorage();
 };
 
-// ===== UPDATE CART PANEL =====
+// ===== PANEL DEL CARRITO =====
 function updateCart() {
   const keys  = Object.keys(orderItems);
   const total = keys.reduce((s, k) => s + orderItems[k].price * orderItems[k].qty, 0);
   const count = keys.reduce((s, k) => s + orderItems[k].qty, 0);
 
-  // Badges & counters
-  const $ = id => document.getElementById(id);
-  if ($("cartBadge"))       $("cartBadge").textContent       = count;
-  if ($("fabBadge"))        $("fabBadge").textContent        = count;
-  if ($("fabAmount"))       $("fabAmount").textContent       = "$" + total.toLocaleString("es-MX");
-  if ($("orderMeterCount")) $("orderMeterCount").textContent = `${count} item${count!==1?"s":""}`;
-  if ($("orderMeterTotal")) $("orderMeterTotal").textContent = "$" + total.toLocaleString("es-MX");
-  if ($("orderMeta"))       $("orderMeta").textContent       = count
-    ? `${count} item${count!==1?"s":""} en tu orden`
+  const g = id => document.getElementById(id);
+  if (g("cartBadge"))       g("cartBadge").textContent       = count;
+  if (g("fabBadge"))        g("fabBadge").textContent        = count;
+  if (g("fabAmount"))       g("fabAmount").textContent       = "$" + total.toLocaleString("es-MX");
+  if (g("orderMeterCount")) g("orderMeterCount").textContent = `${count} item${count !== 1 ? "s" : ""}`;
+  if (g("orderMeterTotal")) g("orderMeterTotal").textContent = "$" + total.toLocaleString("es-MX");
+  if (g("orderMeta"))       g("orderMeta").textContent       = count
+    ? `${count} item${count !== 1 ? "s" : ""} en tu orden`
     : "Sin platillos agregados";
-  $("orderFab")?.classList.toggle("visible", count > 0);
+  g("orderFab")?.classList.toggle("visible", count > 0);
 
-  const container = $("orderItems");
-  const empty     = $("orderEmpty");
-  const footer    = $("orderFooter");
+  const container = g("orderItems");
+  const empty     = g("orderEmpty");
+  const footer    = g("orderFooter");
   if (!container) return;
 
   if (!keys.length) {
@@ -625,17 +603,15 @@ function updateCart() {
   container.innerHTML = "";
   keys.forEach(key => {
     const item = orderItems[key];
-
-    // order-line: grid 34px | 1fr
     const line = document.createElement("div");
     line.className = "order-line";
 
-    // Col 1 — qty badge
+    // Col 1: badge cantidad
     const badge = document.createElement("div");
     badge.className   = "order-line-qty";
     badge.textContent = `x${item.qty}`;
 
-    // Col 2 — sub-grid: name | price  /  unit | actions
+    // Col 2: info
     const info = document.createElement("div");
     info.className = "order-line-info";
 
@@ -654,25 +630,29 @@ function updateCart() {
     const actions = document.createElement("div");
     actions.className = "order-line-actions";
 
-    const bMinus = document.createElement("button"); bMinus.className = "order-qty-btn"; bMinus.textContent = "−";
-    const qSpan  = document.createElement("span");   qSpan.className  = "order-qty-num"; qSpan.textContent  = item.qty;
-    const bPlus  = document.createElement("button"); bPlus.className  = "order-qty-btn"; bPlus.textContent  = "+";
+    const bMinus = document.createElement("button");
+    bMinus.className = "order-qty-btn"; bMinus.textContent = "−";
+    const qNum = document.createElement("span");
+    qNum.className = "order-qty-num"; qNum.textContent = item.qty;
+    const bPlus = document.createElement("button");
+    bPlus.className = "order-qty-btn"; bPlus.textContent = "+";
+
     bMinus.addEventListener("click", () => panelQty(key, -1));
     bPlus.addEventListener("click",  () => panelQty(key,  1));
 
-    actions.append(bMinus, qSpan, bPlus);
+    actions.append(bMinus, qNum, bPlus);
     info.append(nameEl, priceEl, unitEl, actions);
     line.append(badge, info);
     container.appendChild(line);
   });
 
-  const sub = $("orderSubtotals");
+  const sub = g("orderSubtotals");
   if (sub) {
     const fee = Math.round(total * 0.1);
     sub.innerHTML = `
       <div class="order-row"><span>Subtotal</span><span>$${total.toLocaleString("es-MX")}</span></div>
       <div class="order-row"><span>Servicio (10%)</span><span>$${fee.toLocaleString("es-MX")}</span></div>
-      <div class="order-row total"><span>Total</span><span>$${Math.round(total*1.1).toLocaleString("es-MX")}</span></div>`;
+      <div class="order-row total"><span>Total</span><span>$${Math.round(total * 1.1).toLocaleString("es-MX")}</span></div>`;
   }
 }
 
@@ -699,12 +679,12 @@ window.panelQty = (name, delta) => {
   updateCart(); saveCartToStorage();
 };
 
-// ===== LAST ORDER =====
+// ===== ÚLTIMO PEDIDO =====
 function saveLastOrder(orderNum, items, notes) {
   const keys = Object.keys(items);
   const snap = {
     orderNum, items, notes,
-    total: Math.round(keys.reduce((s,k) => s + items[k].price*items[k].qty, 0) * 1.1),
+    total: Math.round(keys.reduce((s, k) => s + items[k].price * items[k].qty, 0) * 1.1),
     createdAt: new Date().toISOString()
   };
   try { sessionStorage.setItem("labocata_last_order", JSON.stringify(snap)); } catch(e) {}
@@ -718,16 +698,16 @@ function renderLastOrder(order = null) {
     try { const s = sessionStorage.getItem("labocata_last_order"); order = s ? JSON.parse(s) : null; } catch(e) {}
   }
   if (!order?.items || !Object.keys(order.items).length) return;
-  const count = Object.keys(order.items).reduce((s,k) => s + order.items[k].qty, 0);
+  const count = Object.keys(order.items).reduce((s, k) => s + order.items[k].qty, 0);
   const rows  = Object.keys(order.items).map(k =>
     `<li><span>${order.items[k].qty}x ${escapeHtml(order.items[k].name)}</span>
-         <strong>$${(order.items[k].price*order.items[k].qty).toLocaleString("es-MX")}</strong></li>`
+         <strong>$${(order.items[k].price * order.items[k].qty).toLocaleString("es-MX")}</strong></li>`
   ).join("");
   const date = new Date(order.createdAt).toLocaleString("es-MX",
-    { day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit" });
+    { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
   card.innerHTML = `
     <span class="last-order-kicker">Orden ${order.orderNum} · ${date}</span>
-    <h3>${count} item${count!==1?"s":""} guardado${count!==1?"s":""}</h3>
+    <h3>${count} item${count !== 1 ? "s" : ""} guardado${count !== 1 ? "s" : ""}</h3>
     <ul class="last-order-list">${rows}</ul>
     <div class="last-order-total"><span>Total con servicio</span>
       <strong>$${order.total.toLocaleString("es-MX")}</strong></div>`;
@@ -742,7 +722,7 @@ function repeatLastOrder() {
     orderItems = JSON.parse(JSON.stringify(last.items || {}));
     saveCartToStorage(); updateCart(); restoreCartUI();
     toggleOrder(true); playFeedback("success");
-  } catch(e) { console.error("repeatLastOrder", e); }
+  } catch(e) { console.error("repeatLastOrder:", e); }
 }
 
 function clearCartUI() {
@@ -750,7 +730,7 @@ function clearCartUI() {
   document.querySelectorAll(".add-btn").forEach(btn => { btn.style.display = ""; });
 }
 
-// ===== CONFIRM ORDER =====
+// ===== CONFIRMAR ORDEN =====
 window.confirmOrder = async () => {
   const keys = Object.keys(orderItems);
   if (!keys.length) return;
@@ -766,26 +746,26 @@ window.confirmOrder = async () => {
   const deliveryAddress = document.getElementById("deliveryAddress")?.value || "";
   const orderSnapshot   = JSON.parse(JSON.stringify(orderItems));
 
-  // Save to Supabase
+  // Guardar en Supabase
   if (window.LBOrderService) {
     try {
       const result = await window.LBOrderService.submitOrder({
         orderItems: orderSnapshot, orderNumber: orderNum,
         notes, orderType, customerName, customerPhone, deliveryAddress
       });
-      if (result.success) console.log("[order] Guardado en Supabase ✓", result.orderId);
-      else                console.warn("[order] No se guardó:", result.error);
-    } catch(e) { console.error("[order] Supabase exception:", e); }
+      if (result.success) console.log("[order] Guardado ✓", result.orderId);
+      else console.warn("[order] Error Supabase:", result.error);
+    } catch(e) { console.error("[order] Exception:", e); }
   }
 
-  // Build WhatsApp message
+  // Mensaje WhatsApp
   let msg = "¡Hola Labocata! 🍳 Pedido:\n\n";
   keys.forEach(k => {
     const it = orderItems[k];
-    msg += `• ${it.qty}x ${it.name} — $${(it.price*it.qty).toLocaleString("es-MX")}\n`;
+    msg += `• ${it.qty}x ${it.name} — $${(it.price * it.qty).toLocaleString("es-MX")}\n`;
   });
-  const total = keys.reduce((s,k) => s + orderItems[k].price*orderItems[k].qty, 0);
-  msg += `\n💰 Total (con servicio): $${Math.round(total*1.1).toLocaleString("es-MX")}`;
+  const total = keys.reduce((s, k) => s + orderItems[k].price * orderItems[k].qty, 0);
+  msg += `\n💰 Total (con servicio): $${Math.round(total * 1.1).toLocaleString("es-MX")}`;
   if (notes) msg += `\n📝 Notas: ${notes}`;
   msg += `\n\n#${orderNum}`;
   window.open(`https://wa.me/529210000000?text=${encodeURIComponent(msg)}`, "_blank");
@@ -812,18 +792,15 @@ window.confirmOrder = async () => {
   }
 };
 
-// ===== RESET ORDER =====
+// ===== RESET ORDEN =====
 window.resetOrder = () => {
   orderItems = {};
   saveCartToStorage();
   clearCartUI();
-
   const oc = document.getElementById("orderContent");
-  if (oc) { oc.style.display = "flex"; oc.style.flexDirection = "column";
-            oc.style.flex = "1"; oc.style.overflow = "hidden"; }
+  if (oc) { oc.style.display = "flex"; oc.style.flexDirection = "column"; oc.style.flex = "1"; oc.style.overflow = "hidden"; }
   document.getElementById("orderSuccess")?.classList.remove("show");
-  const on = document.getElementById("orderNotes");
-  if (on) on.value = "";
+  const on = document.getElementById("orderNotes"); if (on) on.value = "";
   setOrderType("pickup");
   updateCart();
   toggleOrder(false);
@@ -846,13 +823,13 @@ window.addSpotlightOrder = () => {
   document.querySelector(".menu-spotlight .spotlight-btn.primary")?.click();
 };
 
-// ===== REVEAL ANIMATIONS =====
+// ===== ANIMACIONES =====
 const revealObs = new IntersectionObserver(
   entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add("visible"); }),
   { threshold: 0.12 }
 );
 
-// ===== INIT =====
+// ===== INICIO =====
 document.addEventListener("DOMContentLoaded", async () => {
   if (window.self !== window.top) document.body.classList.add("is-preview");
   loadCartFromStorage();
