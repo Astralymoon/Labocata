@@ -97,30 +97,33 @@
     const fee      = Math.round(subtotal * 0.1 * 100) / 100;
     const total    = Math.round((subtotal + fee) * 100) / 100;
 
-    // Insertar orden
-    const { data: orderData, error: orderError } = await window.supabaseClient
-      .from("orders")
-      .insert([{
-        order_number:     sanitize(orderNumber, 20),
-        status:           "pending",
-        order_type:       orderType === "delivery" ? "delivery" : "pickup",
-        customer_name:    sanitize(customerName, 100),
-        customer_phone:   sanitize(customerPhone, 20),
-        delivery_address: sanitize(deliveryAddress, 300),
-        notes:            sanitize(notes, 500),
-        subtotal,
-        service_fee: fee,
-        total,
-      }])
-      .select("id")
-      .single();
+    // Insertar orden.
+    // NOTA: usamos la funcion RPC create_order (SECURITY DEFINER) en vez de
+    // .from("orders").insert().select().single() porque un INSERT con
+    // RETURNING tambien exige que la fila pase la politica RLS de SELECT.
+    // Como solo el admin puede leer "orders", un cliente anonimo real jamas
+    // pasaria esa verificacion y el pedido se rechazaba con error 42501
+    // ("new row violates row-level security policy"). La funcion RPC inserta
+    // y devuelve el id sin pasar por esa restriccion, sin abrir la lectura
+    // de pedidos a cualquiera.
+    const { data: orderId, error: orderError } = await window.supabaseClient.rpc("create_order", {
+      p_order_number:     sanitize(orderNumber, 20),
+      p_status:           "pending",
+      p_order_type:       orderType === "delivery" ? "delivery" : "pickup",
+      p_customer_name:    sanitize(customerName, 100),
+      p_customer_phone:   sanitize(customerPhone, 20),
+      p_delivery_address: sanitize(deliveryAddress, 300),
+      p_notes:            sanitize(notes, 500),
+      p_subtotal:         subtotal,
+      p_service_fee:      fee,
+      p_total:            total,
+    });
 
     if (orderError) {
       console.error("[order-service] Error orden:", orderError.message, "| Code:", orderError.code);
       return { success: false, error: "Error al guardar: " + orderError.message };
     }
 
-    const orderId = orderData.id;
     console.log("[order-service] Orden guardada:", orderId);
 
     // Insertar items
