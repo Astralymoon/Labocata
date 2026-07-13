@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Labocata — Brunch en Coatzacoalcos, Veracruz</title>
+    <meta name="description" content="Labocata, el brunch de autor en Coatzacoalcos, Veracruz. Ingredientes locales, café de especialidad y menú estacional. Lun–Vie 8–16h · Sáb–Dom 8–17h." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Syne:wght@400;500;600;700;800&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="CSS.css" />
+  </head>
+  <body>
+    <!-- NAV -->
+    <nav id="nav">
+      <a href="../index.html" class="nav-logo">Labocata.</a>
+      <ul class="nav-links">
+        <li><a href="Nosotros.html">Nosotros</a></li>
+        <li><a href="MenuV3.html" class="active">Menú</a></li>
+        <li><a href="Localesreservas.html">Sucursales</a></li>
+        <li><a href="#lastOrderSection">Ultimo pedido</a></li>
+      </ul>
+      <div class="nav-right">
+        <a href="Localesreservas.html#reservaciones" class="nav-cta">Reservar</a>
+        <button class="nav-cart-btn" id="openOrder" onclick="toggleOrder(true)" aria-label="Ver mi orden">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <path d="M16 10a4 4 0 01-8 0" />
+          </svg>
+          <span class="cart-label">Mi orden</span>
+          <span class="cart-count-badge" id="cartBadge">0</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- ORDER OVERLAY -->
+    <div class="order-overlay" id="orderOverlay" onclick="toggleOrder(false)"></div>
+
+    <!-- ORDER PANEL -->
+    <div class="order-panel" id="orderPanel" role="dialog" aria-label="Panel de orden">
+      <div class="order-header">
+        <div class="order-title">
+          <span>Tu pedido</span>
+          Mi orden
+          <small id="orderMeta">Sin platillos agregados</small>
+        </div>
+        <button class="order-close" onclick="toggleOrder(false)" aria-label="Cerrar panel">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+        </button>
+      </div>
+      <div id="orderContent" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
+        <div class="order-meter" id="orderMeter" aria-live="polite">
+          <span id="orderMeterCount">0 items</span>
+          <strong id="orderMeterTotal">$0</strong>
+        </div>
+        <div class="order-items" id="orderItems">
+          <div class="order-empty" id="orderEmpty">
+            <div class="order-empty-icon">
+              <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 01-8 0" /></svg>
+            </div>
+            <p>Tu orden está vacía</p>
+            <small>Agrega platillos del menú usando el botón <strong>+</strong> en cada item.</small>
+          </div>
+        </div>
+        <div class="order-footer" id="orderFooter" style="display:none;">
+          <div class="order-subtotals" id="orderSubtotals"></div>
+          <div class="order-type">
+            <button class="order-type-btn active" id="btnPickup" onclick="setOrderType('pickup')">
+              <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+              <span class="order-type-label">Recoger en restaurante</span>
+            </button>
+            <button class="order-type-btn" id="btnDelivery" onclick="setOrderType('delivery')">
+              <svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" /><polygon points="16 8 20 8 23 11 23 16 16 16 16 8" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" /></svg>
+              <span class="order-type-label">Envío a domicilio</span>
+            </button>
+          </div>
+          <div class="pickup-info show" id="pickupInfo">
+            <div class="pickup-icon"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg></div>
+            <div class="pickup-text">
+              <p>Punto de recogida</p>
+              <small>Labocata — Coatzacoalcos, Ver.<br />Listo en aprox. 20–30 min</small>
+            </div>
+          </div>
+          <div class="delivery-fields" id="deliveryFields">
+            <div class="delivery-time-note">Entrega estimada 40–55 min</div>
+            <input class="order-input" id="deliveryName" placeholder="Tu nombre completo" type="text" />
+            <input class="order-input" id="deliveryPhone" placeholder="Teléfono de contacto" type="tel" />
+            <input class="order-input" id="deliveryAddress" placeholder="Calle y número" type="text" />
+            <div class="order-input-row">
+              <input class="order-input" placeholder="Colonia" type="text" />
+              <input class="order-input" placeholder="Código postal" type="text" />
+            </div>
+            <input class="order-input" placeholder="Referencias (color de puerta, detalles...)" type="text" />
+          </div>
+          <label class="order-notes-label" for="orderNotes">Notas para la cocina</label>
+          <textarea class="order-notes" id="orderNotes" placeholder="Alergias, preferencias, sin cebolla…"></textarea>
+          <button class="btn-order" id="confirmBtn" onclick="confirmOrder()">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="white" stroke-width="2">
+              <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>
+            </svg>
+            Confirmar por WhatsApp
+          </button>
+        </div>
+      </div>
+      <div class="order-success" id="orderSuccess">
+        <div class="order-success-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg></div>
+        <h3>¡Orden enviada!</h3>
+        <p>Tu pedido se abrió en WhatsApp. En breve tu mesero lo confirmará.</p>
+        <span class="order-num" id="orderNum"></span>
+        <button class="btn-gold" style="margin-top:8px" onclick="resetOrder()">Nueva orden</button>
+      </div>
+    </div>
+
+    <!-- FAB -->
+    <button class="order-fab" id="orderFab" onclick="toggleOrder(true)" aria-label="Ver orden">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 01-8 0" />
+      </svg>
+      <span class="fab-badge" id="fabBadge">0</span>
+      <span>Ver orden</span>
+      <span class="fab-amount" id="fabAmount">$0</span>
+    </button>
+
+    <!-- HERO -->
+    <section class="menu-hero">
+      <div class="menu-hero-bg"></div>
+      <div class="menu-hero-content">
+        <span class="menu-hero-label">Labocata brunch de autor</span>
+        <h1 class="menu-hero-title">Brunch<br /><em>con calma.</em></h1>
+        <p class="menu-hero-sub">Huevos al momento, café bien hecho y recetas cálidas para empezar el día sin prisa.</p>
+        <span class="menu-hero-location">Coatzacoalcos, Ver. · Temporada Primavera / Verano</span>
+        <div class="hours-pill">
+          <div class="hours-dot"></div>
+          Lun – Vie 8:00 – 16:00 &nbsp;·&nbsp; Sáb &amp; Dom 8:00 – 17:00
+        </div>
+      </div>
+    </section>
+
+    <!-- TICKER -->
+    <div class="strip" aria-hidden="true">
+      <div class="strip-inner">
+        <span class="strip-item">Brunch de autor</span>
+        <span class="strip-item">Ingredientes locales</span>
+        <span class="strip-item">Café de especialidad</span>
+        <span class="strip-item">Menú estacional</span>
+        <span class="strip-item">Coatzacoalcos</span>
+        <span class="strip-item">Sin prisa</span>
+        <span class="strip-item">Brunch de autor</span>
+        <span class="strip-item">Ingredientes locales</span>
+        <span class="strip-item">Café de especialidad</span>
+        <span class="strip-item">Menú estacional</span>
+        <span class="strip-item">Coatzacoalcos</span>
+        <span class="strip-item">Sin prisa</span>
+      </div>
+    </div>
+
+    <!-- FILTER NAV — completamente vacío, JS lo construye -->
+    <div class="filter-section" role="navigation" aria-label="Filtrar menú">
+      <div class="filter-inner" id="filterInner">
+        <!-- Populated by JavaScript -->
+      </div>
+    </div>
+
+    <!-- SPOTLIGHT -->
+    <section class="menu-spotlight" aria-label="Imperdible de hoy" style="display:none;">
+      <div class="spotlight-copy">
+        <span class="spotlight-label" id="spotlightDayLabel">Imperdible de hoy</span>
+        <h2 id="spotlightTitle"></h2>
+        <p id="spotlightDescription"></p>
+        <div class="spotlight-mini-total">
+          <span>Combo sugerido</span>
+          <strong id="spotlightTotal">$0</strong>
+        </div>
+      </div>
+      <div class="spotlight-photos" aria-hidden="true">
+        <figure class="spotlight-photo main">
+          <img id="spotlightImageOne" src="" alt="" loading="lazy" />
+        </figure>
+      </div>
+      <div class="spotlight-actions">
+        <button class="spotlight-btn primary" type="button">Agregar</button>
+        <button class="spotlight-btn secondary" type="button" onclick="addSpotlightOrder()">Armar mi orden</button>
+      </div>
+    </section>
+
+    <!-- MENU BODY — JS renderiza aquí -->
+    <main class="menu-body" id="menuBody">
+      <div id="menu-categories-container"></div>
+    </main>
+
+    <!-- ALLERGEN NOTE -->
+    <div class="allergen-note" role="note">
+      <div class="allergen-icon" aria-hidden="true">i</div>
+      <p><strong>Alérgenos e ingredientes:</strong> Si tienes alguna alergia o intolerancia, notifica a tu mesero antes de ordenar. Podemos adaptar varios platillos. Nuestra cocina maneja gluten, lácteos, nueces y mariscos.</p>
+    </div>
+
+    <!-- BEBIDAS — header estático, grids los pone el JS -->
+    <section class="bebidas-section" id="bebidasSection">
+      <div class="bebidas-header">
+        <div>
+          <span class="bebidas-label">Bebidas</span>
+          <h2 class="bebidas-title">Para <em>despertar.</em></h2>
+        </div>
+        <p class="bebidas-subtitle">Café de especialidad, jugos naturales y licuados.</p>
+      </div>
+    </section>
+
+    <!-- FILTROS DE BEBIDAS — vacío, JS lo construye -->
+    <nav class="bebidas-filter-bar" id="bebidasFilterBar" aria-label="Filtrar bebidas">
+      <!-- Populated by JavaScript -->
+    </nav>
+
+    <!-- GRIDS DE BEBIDAS — vacío, JS lo construye -->
+    <div id="bebidasGrids"></div>
+
+    <!-- LAST ORDER -->
+    <section class="promo-band last-order-section" id="lastOrderSection">
+      <div>
+        <span class="promo-label">Seguimiento de pedido</span>
+        <h2 class="promo-title">Tu último<br /><em>pedido</em>.</h2>
+        <p class="promo-text">Cuando confirmes una orden, aquí quedará un resumen rápido con número, total y platillos.</p>
+        <div class="promo-actions">
+          <button class="btn-gold" type="button" onclick="toggleOrder(true)">Ver orden actual</button>
+          <button class="btn-ivory-ghost" type="button" onclick="repeatLastOrder()">Repetir último</button>
+        </div>
+      </div>
+      <div class="last-order-card" id="lastOrderCard">
+        <span class="last-order-kicker">Aún no hay pedidos confirmados</span>
+        <h3>Tu siguiente orden aparecerá aquí.</h3>
+        <p>Agrega platillos desde el menú y confirma por WhatsApp para guardar el resumen.</p>
+        <div class="last-order-empty"><span>0</span> items guardados</div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+      <div class="footer-top">
+        <div>
+          <span class="footer-logo">Labocata.</span>
+          <p class="footer-tagline">El arte del brunch. Ingredientes honestos, ambiente cálido y momentos que permanecen.</p>
+          <div class="social-links">
+            <a href="https://www.instagram.com/la_bocata_restaurante/" class="social-link" target="_blank" rel="noopener">Instagram</a>
+            <a href="https://www.facebook.com/p/La-Bocata-Coatza-100090747382011/" class="social-link" target="_blank" rel="noopener">Facebook</a>
+            <a href="https://www.tiktok.com/@la.bocata.coatza" class="social-link" target="_blank" rel="noopener">TikTok</a>
+          </div>
+        </div>
+        <div class="footer-col">
+          <h4>Visitar</h4>
+          <ul>
+            <li><a href="#menuBody">Menú completo</a></li>
+            <li><a href="Localesreservas.html#reservaciones">Reservaciones</a></li>
+            <li><a href="#lastOrderSection">Último pedido</a></li>
+            <li><a href="#orderPanel" onclick="toggleOrder(true); return false;">Ordenar ahora</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Nosotros</h4>
+          <ul>
+            <li><a href="Nosotros.html#historia">Nuestra historia</a></li>
+            <li><a href="Nosotros.html#fundadora">El equipo</a></li>
+            <li><a href="Nosotros.html#proveedores">Proveedores</a></li>
+            <li><a href="Nosotros.html#prensa">Prensa</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Contacto</h4>
+          <ul>
+            <li><a href="Localesreservas.html">Coatzacoalcos, Ver.</a></li>
+            <li><a href="mailto:hola@labocata.mx">hola@labocata.mx</a></li>
+            <li><a href="tel:+529210000000">+52 921 000 0000</a></li>
+            <li><a href="https://wa.me/529210000000" target="_blank" rel="noopener">WhatsApp</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span class="footer-copy">© Labocata 2025 — Todos los derechos reservados.</span>
+        <div class="footer-legal">
+          <a href="Localesreservas.html#reservaciones">Términos</a>
+          <a href="mailto:hola@labocata.mx">Privacidad</a>
+          <a href="mailto:hola@labocata.mx">Cookies</a>
+        </div>
+      </div>
+    </footer>
+
+    <section class="admin-entry" aria-label="Acceso administrativo">
+      <span>Acceso interno</span>
+      <a href="Admin.html">Admin</a>
+    </section>
+
+   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.0/dist/umd/supabase.min.js"></script>
+    <script src="../js/config/supabase.js"></script>
+    <script src="../js/services/supabaseClient.js"></script>
+    <script src="../js/services/orderService.js"></script>
+    <script src="../page-transition.js" defer></script>
+    <script src="JavaScript.js?v=3" defer></script>
+  </body>
+</html>

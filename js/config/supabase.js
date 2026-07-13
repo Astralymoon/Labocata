@@ -1,0 +1,8 @@
+(function () {
+  "use strict";
+
+  window.LB_SUPABASE_CONFIG = {
+    url: "https://swidrvfxpxwawrrxulhl.supabase.co",
+    anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3aWRydmZ4cHh3YXdycnh1bGhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExOTU0MTMsImV4cCI6MjA5Njc3MTQxM30.Ne3_Af9I5-7dqSHnOYedMWNjyZKO_rOxuX3jxcVu9UY",
+  };
+})();
