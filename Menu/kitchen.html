@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cocina | Labocata.</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Syne:wght@400;500;600;700;800&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="CSS.css">
+    <style>
+        body.kds-page {
+            background: var(--espresso);
+            color: var(--ivory);
+            min-height: 100vh;
+            font-family: "Cormorant Garamond", serif;
+        }
+        .kds-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 28px;
+            background: rgba(0,0,0,0.25);
+            border-bottom: 1px solid rgba(201,169,110,0.25);
+        }
+        .kds-nav h1 {
+            font-family: "DM Serif Display", serif;
+            font-size: 1.6rem;
+            color: var(--gold);
+        }
+        .kds-nav-right { display: flex; align-items: center; gap: 16px; font-family: "Syne", sans-serif; font-size: 0.7rem; }
+        .kds-nav-right button {
+            background: transparent;
+            border: 1px solid rgba(250,247,242,0.35);
+            color: var(--ivory);
+            padding: 8px 14px;
+            cursor: pointer;
+            font-family: "Syne", sans-serif;
+            font-size: 0.65rem;
+            letter-spacing: 0.05em;
+        }
+        .kds-status-dot {
+            width: 8px; height: 8px; border-radius: 999px; display: inline-block;
+            background: #4a7c59; margin-right: 6px;
+        }
+        .kds-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background: rgba(201,169,110,0.15);
+            min-height: calc(100vh - 64px);
+        }
+        .kds-column { background: #150e05; display: flex; flex-direction: column; }
+        .kds-column-header {
+            padding: 16px 18px;
+            font-family: "Syne", sans-serif;
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--gold);
+            border-bottom: 1px solid rgba(201,169,110,0.2);
+            display: flex;
+            justify-content: space-between;
+        }
+        .kds-column-body { padding: 12px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; flex: 1; }
+        .kds-card {
+            background: #1e1509;
+            border: 1px solid rgba(201,169,110,0.18);
+            border-radius: 4px;
+            padding: 14px 16px;
+        }
+        .kds-card-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+        .kds-order-num { font-family: "DM Serif Display", serif; font-size: 1.15rem; color: var(--ivory); }
+        .kds-order-time { font-family: "Syne", sans-serif; font-size: 0.6rem; color: rgba(250,247,242,0.55); }
+        .kds-order-type {
+            display: inline-block; font-family: "Syne", sans-serif; font-size: 0.55rem;
+            padding: 2px 8px; border-radius: 999px; background: rgba(201,169,110,0.18);
+            color: var(--gold); margin-bottom: 8px; letter-spacing: 0.05em; text-transform: uppercase;
+        }
+        .kds-customer { font-size: 0.85rem; color: rgba(250,247,242,0.75); margin-bottom: 6px; }
+        .kds-items { list-style: none; margin: 6px 0 10px; padding: 0; }
+        .kds-items li { font-size: 0.92rem; padding: 2px 0; display: flex; justify-content: space-between; gap: 8px; }
+        .kds-items li span.qty { color: var(--gold); font-weight: 600; min-width: 26px; }
+        .kds-notes {
+            font-size: 0.82rem; font-style: italic; color: rgba(250,247,242,0.7);
+            background: rgba(201,169,110,0.08); padding: 6px 10px; margin-bottom: 10px; border-left: 2px solid var(--gold);
+        }
+        .kds-actions { display: flex; gap: 8px; }
+        .kds-btn {
+            flex: 1; font-family: "Syne", sans-serif; font-size: 0.65rem; letter-spacing: 0.04em;
+            padding: 9px 10px; border: none; cursor: pointer; text-transform: uppercase;
+        }
+        .kds-btn-advance { background: var(--gold); color: var(--espresso); }
+        .kds-btn-cancel { background: transparent; border: 1px solid rgba(250,247,242,0.25); color: rgba(250,247,242,0.6); flex: 0 0 auto; padding: 9px 12px; }
+        .kds-empty { color: rgba(250,247,242,0.35); font-size: 0.85rem; padding: 20px; text-align: center; }
+        @media (max-width: 1000px) {
+            .kds-board { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body class="kds-page">
+    <nav class="kds-nav">
+        <h1>Labocata — Cocina</h1>
+        <div class="kds-nav-right">
+            <span><span class="kds-status-dot" id="liveDot"></span><span id="liveLabel">En vivo</span></span>
+            <span id="user-email"></span>
+            <a href="Admin.html" style="color:var(--ivory); font-family:'Syne',sans-serif; font-size:0.65rem; text-decoration:underline;">Panel Admin</a>
+            <button onclick="window.auth.signOut()">Cerrar Sesión</button>
+        </div>
+    </nav>
+
+    <div class="kds-board" id="kdsBoard">
+        <div class="kds-column" data-status="pending">
+            <div class="kds-column-header"><span>Pendiente</span><span id="count-pending">0</span></div>
+            <div class="kds-column-body" id="col-pending"></div>
+        </div>
+        <div class="kds-column" data-status="accepted">
+            <div class="kds-column-header"><span>Aceptado</span><span id="count-accepted">0</span></div>
+            <div class="kds-column-body" id="col-accepted"></div>
+        </div>
+        <div class="kds-column" data-status="preparing">
+            <div class="kds-column-header"><span>Preparando</span><span id="count-preparing">0</span></div>
+            <div class="kds-column-body" id="col-preparing"></div>
+        </div>
+        <div class="kds-column" data-status="ready">
+            <div class="kds-column-header"><span>Listo</span><span id="count-ready">0</span></div>
+            <div class="kds-column-body" id="col-ready"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/config/supabase.js"></script>
+    <script src="../js/services/supabaseClient.js"></script>
+    <script src="../js/services/kitchenService.js"></script>
+    <script src="auth.js"></script>
+    <script src="kitchen.js"></script>
+</body>
+</html>
