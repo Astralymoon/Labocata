@@ -41,9 +41,9 @@
     return { success: true };
   }
 
-  // Suscripcion en tiempo real: en cualquier cambio de orders u order_items,
-  // se llama a onChange() para que la pantalla vuelva a pedir la lista completa.
-  // (Mas simple y confiable que reconciliar diffs parciales en el cliente.)
+  // Suscripcion en tiempo real. onChange(payload) se llama en cualquier
+  // cambio; payload.table y payload.eventType permiten distinguir, por
+  // ejemplo, un pedido nuevo (orders / INSERT) de una simple actualizacion.
   function subscribeToOrders(onChange) {
     if (!window.supabaseClient) return null;
 

@@ -10,6 +10,27 @@
 
   let channel = null;
   let refreshTimer = null;
+  let audioCtx = null;
+
+  function playNewOrderChime() {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const now = audioCtx.currentTime;
+      const notes = [660, 880, 1100]; // campanita ascendente, distinta al "add" del menu
+      notes.forEach((freq, i) => {
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = "sine";
+        o.frequency.setValueAtTime(freq, now + i * 0.14);
+        g.gain.setValueAtTime(0.0001, now + i * 0.14);
+        g.gain.exponentialRampToValueAtTime(0.22, now + i * 0.14 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.14 + 0.32);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(now + i * 0.14);
+        o.stop(now + i * 0.14 + 0.34);
+      });
+    } catch (e) { console.warn("[kitchen] No se pudo reproducir el sonido:", e); }
+  }
 
   function escapeHtml(v = "") {
     return String(v).replace(/[&<>"']/g, c =>
@@ -129,6 +150,15 @@
   }
 
   document.addEventListener("DOMContentLoaded", async () => {
+    // Los navegadores bloquean audio hasta el primer gesto del usuario;
+    // esto lo "desbloquea" en cuanto el admin toca la pantalla.
+    const unlockAudio = () => {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      document.removeEventListener("click", unlockAudio);
+    };
+    document.addEventListener("click", unlockAudio);
+
     await window.auth.requireAdmin();
     const user = await window.auth.getUser();
     if (user) document.getElementById("user-email").textContent = user.email;
@@ -136,6 +166,12 @@
     await loadAndRender();
 
     channel = window.LBKitchenService.subscribeToOrders((payload) => {
+      if (payload.table === "orders" && payload.eventType === "INSERT") {
+        playNewOrderChime();
+        const board = document.getElementById("kdsBoard");
+        board.classList.add("kds-new-order-pulse");
+        setTimeout(() => board.classList.remove("kds-new-order-pulse"), 900);
+      }
       scheduleRefresh();
     });
 
