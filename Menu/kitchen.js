@@ -11,6 +11,7 @@
   let channel = null;
   let refreshTimer = null;
   let audioCtx = null;
+  let lastOrders = [];
 
   function playNewOrderChime() {
     try {
@@ -78,6 +79,12 @@
       : "";
     const cancelBtn = `<button class="kds-btn kds-btn-cancel" data-order-id="${order.id}" data-next-status="cancelled">Cancelar</button>`;
 
+    const notifyHtml = order.status === "ready"
+      ? (order.notified_at
+          ? `<div class="kds-notified-badge">✓ Cliente avisado</div>`
+          : `<button class="kds-btn kds-btn-notify" data-notify-id="${order.id}">📣 Avisar cliente</button>`)
+      : "";
+
     return `
       <div class="kds-card kds-urgency-${urgency}" id="order-${order.id}">
         <div class="kds-card-head">
@@ -88,6 +95,7 @@
         ${customerLine}
         <ul class="kds-items">${items}</ul>
         ${notesHtml}
+        ${notifyHtml}
         <div class="kds-actions">${advanceBtn}${cancelBtn}</div>
       </div>
     `;
@@ -110,6 +118,68 @@
     document.querySelectorAll(".kds-btn[data-order-id]").forEach(btn => {
       btn.addEventListener("click", onAdvanceClick);
     });
+    document.querySelectorAll(".kds-btn-notify[data-notify-id]").forEach(btn => {
+      btn.addEventListener("click", onNotifyClick);
+    });
+  }
+
+  function buildTicketHtml(order) {
+    const isDelivery = order.order_type === "delivery";
+    const fecha = new Date(order.created_at).toLocaleString("es-MX", {
+      day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"
+    });
+
+    const itemsHtml = (order.order_items || []).map(it => `
+      <div class="pt-row">
+        <span>${it.quantity}x ${escapeHtml(it.item_name)}</span>
+        <span>$${Number(it.subtotal).toLocaleString("es-MX")}</span>
+      </div>
+      <div class="pt-note pt-unit">$${Number(it.item_price).toLocaleString("es-MX")} c/u</div>
+      ${it.notes ? `<div class="pt-note">* ${escapeHtml(it.notes)}</div>` : ""}
+    `).join("");
+
+    const customerHtml = isDelivery
+      ? `<div>${escapeHtml(order.customer_name || "")}</div>
+         <div>${escapeHtml(order.customer_phone || "")}</div>
+         <div>${escapeHtml(order.delivery_address || "")}</div>`
+      : `<div class="pt-center">PARA RECOGER</div>`;
+
+    return `
+      <div class="pt-center pt-title">LABOCATA</div>
+      <div class="pt-center">${escapeHtml(order.order_number)}</div>
+      <div class="pt-center">${fecha}</div>
+      <div class="pt-line"></div>
+      <div class="pt-center">${isDelivery ? "DOMICILIO" : "RECOGER"}</div>
+      ${customerHtml}
+      <div class="pt-line"></div>
+      ${itemsHtml}
+      <div class="pt-line"></div>
+      <div class="pt-row"><span>Subtotal</span><span>$${Number(order.subtotal).toLocaleString("es-MX")}</span></div>
+      <div class="pt-row"><span>Servicio</span><span>$${Number(order.service_fee).toLocaleString("es-MX")}</span></div>
+      <div class="pt-row pt-title"><span>TOTAL</span><span>$${Number(order.total).toLocaleString("es-MX")}</span></div>
+      ${order.notes ? `<div class="pt-line"></div><div class="pt-notes-box"><strong>NOTA DEL CLIENTE:</strong><br>${escapeHtml(order.notes)}</div>` : ""}
+    `;
+  }
+
+  function printTicket(order) {
+    const area = document.getElementById("printArea");
+    area.innerHTML = buildTicketHtml(order);
+    window.print();
+  }
+
+  async function onNotifyClick(e) {
+    const btn = e.currentTarget;
+    const orderId = btn.dataset.notifyId;
+    btn.disabled = true;
+    const result = await window.LBKitchenService.markNotified(orderId);
+    if (!result.success) {
+      alert("No se pudo marcar como avisado: " + result.error);
+      btn.disabled = false;
+      return;
+    }
+    const order = lastOrders.find(o => String(o.id) === String(orderId));
+    if (order) printTicket(order);
+    await loadAndRender();
   }
 
   async function onAdvanceClick(e) {
@@ -132,7 +202,15 @@
       console.error("[kitchen] Error al cargar:", result.error);
       return;
     }
+    lastOrders = result.orders;
     renderBoard(result.orders);
+  }
+
+  async function loadStats() {
+    const stats = await window.LBKitchenService.getTodayStats();
+    if (!stats.success) return;
+    document.getElementById("statsCount").textContent = stats.count;
+    document.getElementById("statsTotal").textContent = "$" + stats.total.toLocaleString("es-MX");
   }
 
   function scheduleRefresh() {
@@ -164,6 +242,7 @@
     if (user) document.getElementById("user-email").textContent = user.email;
 
     await loadAndRender();
+    await loadStats();
 
     channel = window.LBKitchenService.subscribeToOrders((payload) => {
       if (payload.table === "orders" && payload.eventType === "INSERT") {
@@ -173,11 +252,12 @@
         setTimeout(() => board.classList.remove("kds-new-order-pulse"), 900);
       }
       scheduleRefresh();
+      loadStats();
     });
 
     // Refresco periodico de respaldo (por si Realtime se desconecta) y
     // para que los tiempos transcurridos de cada tarjeta se mantengan al dia.
-    setInterval(loadAndRender, 30000);
+    setInterval(() => { loadAndRender(); loadStats(); }, 30000);
 
     window.addEventListener("beforeunload", () => {
       window.LBKitchenService.unsubscribe(channel);
