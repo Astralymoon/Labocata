@@ -56,20 +56,31 @@
             letter-spacing: 0.08em;
             text-transform: uppercase;
             color: var(--gold);
-            border-bottom: 1px solid rgba(201,169,110,0.2);
+            border-bottom: 3px solid rgba(201,169,110,0.2);
             display: flex;
             justify-content: space-between;
         }
+        .kds-column[data-status="pending"]   .kds-column-header { border-bottom-color: #3b82f6; color: #6ea8ff; }
+        .kds-column[data-status="accepted"]  .kds-column-header { border-bottom-color: #3b82f6; color: #6ea8ff; }
+        .kds-column[data-status="preparing"] .kds-column-header { border-bottom-color: #eab308; color: #f5d24a; }
+        .kds-column[data-status="ready"]     .kds-column-header { border-bottom-color: #22c55e; color: #5fe08c; }
         .kds-column-body { padding: 12px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; flex: 1; }
         .kds-card {
             background: #1e1509;
             border: 1px solid rgba(201,169,110,0.18);
+            border-left: 5px solid rgba(201,169,110,0.3);
             border-radius: 4px;
             padding: 14px 16px;
         }
+        .kds-card.kds-urgency-ok   { border-left-color: #22c55e; }
+        .kds-card.kds-urgency-warn { border-left-color: #eab308; }
+        .kds-card.kds-urgency-late { border-left-color: #ef4444; box-shadow: 0 0 0 1px rgba(239,68,68,0.4); }
         .kds-card-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
         .kds-order-num { font-family: "DM Serif Display", serif; font-size: 1.15rem; color: var(--ivory); }
-        .kds-order-time { font-family: "Syne", sans-serif; font-size: 0.6rem; color: rgba(250,247,242,0.55); }
+        .kds-order-time { font-family: "Syne", sans-serif; font-size: 0.62rem; color: rgba(250,247,242,0.55); padding: 3px 8px; border-radius: 999px; font-weight: 700; }
+        .kds-order-time.kds-urgency-badge-ok   { background: rgba(34,197,94,0.18); color: #5fe08c; }
+        .kds-order-time.kds-urgency-badge-warn { background: rgba(234,179,8,0.2); color: #f5d24a; }
+        .kds-order-time.kds-urgency-badge-late { background: rgba(239,68,68,0.25); color: #ff8a8a; }
         .kds-order-type {
             display: inline-block; font-family: "Syne", sans-serif; font-size: 0.55rem;
             padding: 2px 8px; border-radius: 999px; background: rgba(201,169,110,0.18);

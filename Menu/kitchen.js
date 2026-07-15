@@ -25,6 +25,14 @@
     return `${hrs}h ${mins % 60}min`;
   }
 
+  // Semaforo por tiempo transcurrido: verde 0-5 min, amarillo 5-30 min, rojo 30+ min.
+  function urgencyLevel(iso) {
+    const mins = (Date.now() - new Date(iso).getTime()) / 60000;
+    if (mins < 5) return "ok";
+    if (mins < 30) return "warn";
+    return "late";
+  }
+
   function renderCard(order) {
     const items = (order.order_items || []).map(it => `
       <li>
@@ -42,6 +50,7 @@
       ? `<div class="kds-notes">${escapeHtml(order.notes)}</div>`
       : "";
 
+    const urgency = urgencyLevel(order.created_at);
     const flow = STATUS_FLOW[order.status];
     const advanceBtn = flow
       ? `<button class="kds-btn kds-btn-advance" data-order-id="${order.id}" data-next-status="${flow.next}">${flow.label}</button>`
@@ -49,10 +58,10 @@
     const cancelBtn = `<button class="kds-btn kds-btn-cancel" data-order-id="${order.id}" data-next-status="cancelled">Cancelar</button>`;
 
     return `
-      <div class="kds-card" id="order-${order.id}">
+      <div class="kds-card kds-urgency-${urgency}" id="order-${order.id}">
         <div class="kds-card-head">
           <span class="kds-order-num">${escapeHtml(order.order_number)}</span>
-          <span class="kds-order-time">${timeAgo(order.created_at)}</span>
+          <span class="kds-order-time kds-urgency-badge-${urgency}">${timeAgo(order.created_at)}</span>
         </div>
         <span class="kds-order-type">${isDelivery ? "Domicilio" : "Recoger"}</span>
         ${customerLine}
