@@ -167,18 +167,46 @@
     window.print();
   }
 
+  function buildCustomerWhatsAppUrl(order) {
+    const digits = String(order.customer_phone || "").replace(/\D/g, "");
+    if (!digits) return null;
+    // Numero mexicano a 10 digitos -> anteponer codigo de pais 52.
+    const phone = digits.length === 10 ? "52" + digits : digits;
+
+    const message = order.order_type === "delivery"
+      ? `¡Hola! Hemos completado su pedido ${order.order_number}, nuestro repartidor va en camino. 🛵`
+      : `¡Hola! Su pedido ${order.order_number} está listo, pase a la sucursal asignada para recogerlo. 🥐`;
+
+    return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+  }
+
   async function onNotifyClick(e) {
     const btn = e.currentTarget;
     const orderId = btn.dataset.notifyId;
     btn.disabled = true;
+
+    // Abrimos la pestaña YA (sincrono, dentro del clic) para que el navegador
+    // no la bloquee como popup; la llenamos despues de guardar en Supabase.
+    const waWindow = window.open("", "_blank");
+
     const result = await window.LBKitchenService.markNotified(orderId);
     if (!result.success) {
       alert("No se pudo marcar como avisado: " + result.error);
       btn.disabled = false;
+      if (waWindow) waWindow.close();
       return;
     }
     const order = lastOrders.find(o => String(o.id) === String(orderId));
-    if (order) printTicket(order);
+    if (order) {
+      printTicket(order);
+      const waUrl = buildCustomerWhatsAppUrl(order);
+      if (waUrl && waWindow) {
+        waWindow.location.href = waUrl;
+      } else if (waWindow) {
+        waWindow.close();
+        alert("Este pedido no tiene teléfono guardado, no se pudo abrir WhatsApp.");
+      }
+    }
     await loadAndRender();
   }
 

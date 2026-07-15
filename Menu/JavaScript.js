@@ -746,6 +746,13 @@ window.confirmOrder = async () => {
   const keys = Object.keys(orderItems);
   if (!keys.length) return;
 
+  const phoneCheck = document.getElementById("customerPhone")?.value.trim() || "";
+  if (!phoneCheck) {
+    alert("Por favor ingresa tu número de teléfono para avisarte cuando tu pedido esté listo.");
+    document.getElementById("customerPhone")?.focus();
+    return;
+  }
+
   const confirmBtn = document.getElementById("confirmBtn");
   if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = "Enviando…"; }
 
@@ -753,7 +760,7 @@ window.confirmOrder = async () => {
   const notes           = document.getElementById("orderNotes")?.value || "";
   const orderType       = document.getElementById("btnDelivery")?.classList.contains("active") ? "delivery" : "pickup";
   const customerName    = document.getElementById("deliveryName")?.value    || "";
-  const customerPhone   = document.getElementById("deliveryPhone")?.value   || "";
+  const customerPhone   = document.getElementById("customerPhone")?.value   || "";
   const deliveryAddress = document.getElementById("deliveryAddress")?.value || "";
   const orderSnapshot   = JSON.parse(JSON.stringify(orderItems));
 
