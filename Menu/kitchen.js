@@ -27,7 +27,10 @@
 
   function renderCard(order) {
     const items = (order.order_items || []).map(it => `
-      <li><span><span class="qty">${it.quantity}x</span> ${escapeHtml(it.item_name)}</span></li>
+      <li>
+        <span><span class="qty">${it.quantity}x</span> ${escapeHtml(it.item_name)}</span>
+        ${it.notes ? `<div class="kds-item-note">✏️ ${escapeHtml(it.notes)}</div>` : ""}
+      </li>
     `).join("");
 
     const isDelivery = order.order_type === "delivery";

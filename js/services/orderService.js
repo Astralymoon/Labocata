@@ -134,6 +134,7 @@
         item_name:  sanitize(orderItems[k].name, 200),
         item_price: orderItems[k].price,
         quantity:   orderItems[k].qty,
+        notes:      sanitize(orderItems[k].notes || "", 300),
         subtotal:   Math.round(orderItems[k].price * orderItems[k].qty * 100) / 100,
       })));
 

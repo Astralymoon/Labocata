@@ -627,6 +627,17 @@ function updateCart() {
     unitEl.className   = "order-line-unit";
     unitEl.textContent = `$${item.price.toLocaleString("es-MX")} c/u`;
 
+    const noteEl = document.createElement("input");
+    noteEl.className   = "order-line-note";
+    noteEl.type        = "text";
+    noteEl.placeholder = "Modificación (ej: sin cebolla)";
+    noteEl.value       = item.notes || "";
+    noteEl.maxLength   = 140;
+    noteEl.addEventListener("input", () => {
+      orderItems[key].notes = noteEl.value;
+      saveCartToStorage();
+    });
+
     const actions = document.createElement("div");
     actions.className = "order-line-actions";
 
@@ -641,7 +652,7 @@ function updateCart() {
     bPlus.addEventListener("click",  () => panelQty(key,  1));
 
     actions.append(bMinus, qNum, bPlus);
-    info.append(nameEl, priceEl, unitEl, actions);
+    info.append(nameEl, priceEl, unitEl, noteEl, actions);
     line.append(badge, info);
     container.appendChild(line);
   });

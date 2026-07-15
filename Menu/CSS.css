@@ -1680,6 +1680,22 @@ nav.scrolled .cart-count-badge { background: var(--gold); color: var(--espresso)
   color: rgba(138,130,120,0.74);
   line-height: 1.25;
 }
+.order-line-note {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  width: 100%;
+  margin-top: 2px;
+  padding: 6px 8px;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 0.86rem;
+  font-style: italic;
+  color: var(--espresso);
+  background: rgba(155,111,62,0.06);
+  border: 1px solid rgba(155,111,62,0.18);
+  border-radius: 2px;
+}
+.order-line-note::placeholder { color: rgba(138,130,120,0.55); }
+.order-line-note:focus { outline: none; border-color: var(--bronze); background: rgba(155,111,62,0.1); }
 
 .order-line-actions {
   display: flex; align-items: center; border: 1px solid rgba(155,111,62,0.22);
