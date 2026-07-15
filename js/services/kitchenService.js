@@ -41,17 +41,62 @@
     return { success: true };
   }
 
+  async function markNotified(orderId) {
+    const { error } = await window.supabaseClient
+      .from("orders")
+      .update({ notified_at: new Date().toISOString() })
+      .eq("id", orderId);
+
+    if (error) {
+      console.error("[kitchen-service] Error al marcar avisado:", error.message);
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  }
+
+  async function getTodayStats() {
+    if (!window.supabaseClient) {
+      return { success: false, error: "Sin conexion al servidor.", count: 0, total: 0 };
+    }
+
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const { data, error } = await window.supabaseClient
+      .from("orders")
+      .select("total, status")
+      .gte("created_at", startOfDay.toISOString());
+
+    if (error) {
+      console.error("[kitchen-service] Error al cargar estadisticas:", error.message);
+      return { success: false, error: error.message, count: 0, total: 0 };
+    }
+
+    const rows = data || [];
+    const cancelled = rows.filter(r => r.status === "cancelled").length;
+    const total = rows
+      .filter(r => r.status !== "cancelled")
+      .reduce((s, r) => s + Number(r.total || 0), 0);
+
+    return { success: true, count: rows.length, cancelled, total };
+  }
+
   // Suscripcion en tiempo real. onChange(payload) se llama en cualquier
   // cambio; payload.table y payload.eventType permiten distinguir, por
   // ejemplo, un pedido nuevo (orders / INSERT) de una simple actualizacion.
-  function subscribeToOrders(onChange) {
+  // onStatus(status) informa el estado de la conexion websocket
+  // ("SUBSCRIBED", "TIMED_OUT", "CHANNEL_ERROR", "CLOSED").
+  function subscribeToOrders(onChange, onStatus) {
     if (!window.supabaseClient) return null;
 
     const channel = window.supabaseClient
       .channel("kds-orders")
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, onChange)
       .on("postgres_changes", { event: "*", schema: "public", table: "order_items" }, onChange)
-      .subscribe();
+      .subscribe((status, err) => {
+        if (err) console.error("[kitchen-service] Error de suscripcion:", err.message);
+        if (onStatus) onStatus(status);
+      });
 
     return channel;
   }
@@ -66,6 +111,8 @@
     ACTIVE_STATUSES,
     getActiveOrders,
     updateOrderStatus,
+    markNotified,
+    getTodayStats,
     subscribeToOrders,
     unsubscribe,
   };

@@ -185,27 +185,21 @@
     const orderId = btn.dataset.notifyId;
     btn.disabled = true;
 
-    // Abrimos la pestaña YA (sincrono, dentro del clic) para que el navegador
-    // no la bloquee como popup; la llenamos despues de guardar en Supabase.
-    const waWindow = window.open("", "_blank");
-
     const result = await window.LBKitchenService.markNotified(orderId);
     if (!result.success) {
       alert("No se pudo marcar como avisado: " + result.error);
       btn.disabled = false;
-      if (waWindow) waWindow.close();
       return;
     }
     const order = lastOrders.find(o => String(o.id) === String(orderId));
     if (order) {
-      printTicket(order);
       const waUrl = buildCustomerWhatsAppUrl(order);
-      if (waUrl && waWindow) {
-        waWindow.location.href = waUrl;
-      } else if (waWindow) {
-        waWindow.close();
+      if (waUrl) {
+        window.open(waUrl, "_blank");
+      } else {
         alert("Este pedido no tiene teléfono guardado, no se pudo abrir WhatsApp.");
       }
+      printTicket(order);
     }
     await loadAndRender();
   }
@@ -272,20 +266,27 @@
     await loadAndRender();
     await loadStats();
 
-    channel = window.LBKitchenService.subscribeToOrders((payload) => {
-      if (payload.table === "orders" && payload.eventType === "INSERT") {
-        playNewOrderChime();
-        const board = document.getElementById("kdsBoard");
-        board.classList.add("kds-new-order-pulse");
-        setTimeout(() => board.classList.remove("kds-new-order-pulse"), 900);
+    channel = window.LBKitchenService.subscribeToOrders(
+      (payload) => {
+        console.log("[kitchen] Cambio recibido via Realtime:", payload.table, payload.eventType);
+        if (payload.table === "orders" && payload.eventType === "INSERT") {
+          playNewOrderChime();
+          const board = document.getElementById("kdsBoard");
+          board.classList.add("kds-new-order-pulse");
+          setTimeout(() => board.classList.remove("kds-new-order-pulse"), 900);
+        }
+        scheduleRefresh();
+        loadStats();
+      },
+      (status) => {
+        console.log("[kitchen] Estado de la suscripcion Realtime:", status);
+        setLiveStatus(status === "SUBSCRIBED");
       }
-      scheduleRefresh();
-      loadStats();
-    });
+    );
 
-    // Refresco periodico de respaldo (por si Realtime se desconecta) y
-    // para que los tiempos transcurridos de cada tarjeta se mantengan al dia.
-    setInterval(() => { loadAndRender(); loadStats(); }, 30000);
+    // Respaldo automatico: no dependemos solo del websocket de Realtime
+    // (puede fallar por red/firewall sin avisar). Cada 5s se refresca solo.
+    setInterval(() => { loadAndRender(); loadStats(); }, 5000);
 
     window.addEventListener("beforeunload", () => {
       window.LBKitchenService.unsubscribe(channel);
